@@ -1,8 +1,10 @@
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace Kino.PostProcessing
 {
+<<<<<<< HEAD:Runtime/Utility.cs
     [System.Serializable]
     public sealed class GradientParameter : ParameterOverride<Gradient>
     {
@@ -13,61 +15,54 @@ namespace Kino.PostProcessing
     }
 
     public static class GradientUtility
+=======
+    [System.Serializable, VolumeComponentMenu("Post-processing/Kino/Utility")]
+    public sealed class Utility : CustomPostProcessVolumeComponent, IPostProcessComponent
+>>>>>>> master:Packages/jp.keijiro.kino.post-processing/Runtime/Utility.cs
     {
-        static readonly GradientColorKey[] _defaultColorKeys = new []
-        {
-            new GradientColorKey(Color.blue, 0),
-            new GradientColorKey(Color.red, 1)
-        };
+        public ClampedFloatParameter saturation = new ClampedFloatParameter(1, 0, 2);
+        public ClampedFloatParameter hueShift = new ClampedFloatParameter(0, -1, 1);
+        public ClampedFloatParameter invert = new ClampedFloatParameter(0, 0, 1);
+        public ColorParameter fade = new ColorParameter(new Color(0, 0, 0, 0), false, true, true);
 
-        static readonly GradientAlphaKey[] _defaultAlphaKeys = new []
-        {
-            new GradientAlphaKey(1, 0),
-            new GradientAlphaKey(1, 1)
-        };
+        Material _material;
 
-        static readonly int[] _colorKeyPropertyIDs = new []
+        static class ShaderIDs
         {
-            Shader.PropertyToID("_ColorKey0"),
-            Shader.PropertyToID("_ColorKey1"),
-            Shader.PropertyToID("_ColorKey2"),
-            Shader.PropertyToID("_ColorKey3"),
-            Shader.PropertyToID("_ColorKey4"),
-            Shader.PropertyToID("_ColorKey5"),
-            Shader.PropertyToID("_ColorKey6"),
-            Shader.PropertyToID("_ColorKey7")
-        };
-
-        public static Gradient DefaultGradient {
-            get {
-                var g = new Gradient();
-                g.SetKeys(_defaultColorKeys, _defaultAlphaKeys);
-                return g;
-            }
+            internal static readonly int FadeColor = Shader.PropertyToID("_FadeColor");
+            internal static readonly int HueShift = Shader.PropertyToID("_HueShift");
+            internal static readonly int InputTexture = Shader.PropertyToID("_InputTexture");
+            internal static readonly int Invert = Shader.PropertyToID("_Invert");
+            internal static readonly int Saturation = Shader.PropertyToID("_Saturation");
         }
 
-        public static int GetColorKeyPropertyID(int index)
+        public bool IsActive() => _material != null &&
+            (saturation.value != 1 || hueShift.value != 0 || invert.value > 0 || fade.value.a > 0);
+
+        public override CustomPostProcessInjectionPoint injectionPoint =>
+            CustomPostProcessInjectionPoint.AfterPostProcess;
+
+        public override void Setup()
         {
-            return _colorKeyPropertyIDs[index];
+            _material = CoreUtils.CreateEngineMaterial("Hidden/Kino/PostProcess/Utility");
         }
 
-        public static void SetColorKeys(PropertySheet sheet, GradientColorKey[] colorKeys)
+        public override void Render(CommandBuffer cmd, HDCamera camera, RTHandle srcRT, RTHandle destRT)
         {
-            for (var i = 0; i < 8; i++)
-                sheet.properties.SetVector(
-                    GetColorKeyPropertyID(i),
-                    colorKeys[Mathf.Min(i, colorKeys.Length - 1)].ToVector()
-                );
+            if (_material == null) return;
+
+            _material.SetColor(ShaderIDs.FadeColor, fade.value);
+            _material.SetFloat(ShaderIDs.HueShift, hueShift.value);
+            _material.SetFloat(ShaderIDs.Invert, invert.value);
+            _material.SetFloat(ShaderIDs.Saturation, saturation.value);
+            _material.SetTexture(ShaderIDs.InputTexture, srcRT);
+
+            HDUtils.DrawFullScreen(cmd, _material, destRT);
         }
 
-    }
-
-    public static class GradientColorKeyExtension
-    {
-        public static Vector4 ToVector(this GradientColorKey key)
+        public override void Cleanup()
         {
-            var c = key.color.linear;
-            return new Vector4(c.r, c.g, c.b, key.time);
+            CoreUtils.Destroy(_material);
         }
     }
 }

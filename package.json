@@ -1,8 +1,20 @@
 {
-    "name": "jp.keijiro.kino.post-processing",
+    "author": "Keijiro Takahashi",
+    "dependencies": { "com.unity.render-pipelines.high-definition": "7.4.1" },
+    "description": "Custom post processing effect collection for HDRP",
     "displayName": "Kino",
+<<<<<<< HEAD:package.json
     "version": "0.1.0",
     "unity": "2018.3",
     "description": "Kino is a collection of custom effects for the Post Processing Stack.",
     "dependencies": { "com.unity.postprocessing": "2.0.15-preview" }
+=======
+    "keywords": [ "unity" ],
+    "license": "Unlicense",
+    "name": "jp.keijiro.kino.post-processing",
+    "repository": "github:keijiro/Kino",
+    "unity": "2019.4",
+    "unityRelease": "0f1",
+    "version": "2.1.15"
+>>>>>>> master:Packages/jp.keijiro.kino.post-processing/package.json
 }
