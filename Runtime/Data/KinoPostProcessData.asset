@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 470ec34e6de44f64b9c40641294f3fbf, type: 3}
+  m_Name: KinoPostProcessData
+  m_EditorClassIdentifier: 
+  shaders:
+    StreakPS: {fileID: 4800000, guid: 017f76d86faea2647bf83a4e1a9d1d47, type: 3}
+    OverlayPS: {fileID: 4800000, guid: 4a7a87040beef8649bdf0cd27e3c240f, type: 3}
+    RecolorPS: {fileID: 4800000, guid: e4a15c7cdc14bd44e9efdb7571af640f, type: 3}
+    GlitchPS: {fileID: 4800000, guid: 7529f969cd6084449a09bb92747af7b7, type: 3}
+    SharpenPS: {fileID: 4800000, guid: 7529f969cd6084449a09bb92747af7b7, type: 3}
+    UtilityPS: {fileID: 4800000, guid: d5e2f3a35a58ce845bbfa01197dbbcdf, type: 3}
+    SlicePS: {fileID: 4800000, guid: f2fcc3dd61de0564ab928639f28316de, type: 3}
+    TestCardPS: {fileID: 4800000, guid: 4b9f17e740dfe3d4bad003032e5bcb10, type: 3}
