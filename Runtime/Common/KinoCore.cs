@@ -142,80 +142,95 @@ namespace Kino.PostProcessing
 
     static class ScriptableRendererInternal
     {
+        private static void GetUniversalRendererMethodInternal(ScriptableRenderer renderer, string methodName, out MethodInfo rendererMethod)
+        {
+            UniversalRenderer universalRenderer = renderer as UniversalRenderer;
+            rendererMethod = universalRenderer?.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (rendererMethod == null)
+            {
+#if UNITY_EDITOR
+                Debug.LogError($"Failed to get {methodName} via System.Reflection");
+#endif
+            }
+        }
+
         public static void EnableSwapBufferMSAA(this ScriptableRenderer renderer, bool enable)
         {
-            UniversalRenderer universalRenderer = (UniversalRenderer) renderer;
-            Type universalRendererType = universalRenderer?.GetType();
-            MethodInfo enableSwapBufferMSAAMethod = universalRendererType?.GetMethod("EnableSwapBufferMSAA", BindingFlags.NonPublic | BindingFlags.Instance);
-            enableSwapBufferMSAAMethod?.Invoke(renderer, new object[] {enable});
+            const string methodName = "EnableSwapBufferMSAA";
+            GetUniversalRendererMethodInternal(renderer, methodName, out MethodInfo enableSwapBufferMSAAMethod);
+            enableSwapBufferMSAAMethod.Invoke(renderer, new object[] {enable});
         }
 
         public static void SwapColorBuffer(this ScriptableRenderer renderer, CommandBuffer cmd)
         {
-            // Debug.Log("Starting SwapColorBuffer()");
-            MethodInfo swapColorBufferMethod = typeof(UniversalRenderer).GetMethod("SwapColorBuffer", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (swapColorBufferMethod == null)
+            const string methodName = "SwapColorBuffer";
+            GetUniversalRendererMethodInternal(renderer, methodName, out MethodInfo swapColorBufferMethod);
+            swapColorBufferMethod.Invoke(renderer, new object[] {cmd});
+        }
+
+        private static bool TryGetColorBufferSystem(ScriptableRenderer renderer, out FieldInfo colorBufferSystemField)
+        {
+            UniversalRenderer universalRenderer = renderer as UniversalRenderer;
+
+            const string fieldName = "m_ColorBufferSystem";
+            colorBufferSystemField = universalRenderer?.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (colorBufferSystemField != null) return true;
+#if UNITY_EDITOR
+            Debug.LogError($"Unable to get {fieldName} via System.Reflection.");
+#endif
+            return false;
+        }
+
+        private static RenderTargetIdentifier GetCameraColorBufferInternal(ScriptableRenderer renderer, CommandBuffer cmd, in string methodName)
+        {
+            RenderTargetIdentifier fallbackCameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
+
+            bool fetchColorBufferSystem = TryGetColorBufferSystem(renderer, out FieldInfo colorBufferSystemField);
+            if (fetchColorBufferSystem == false)
             {
-                Debug.LogError("Could not retrieve SwapColorBufferMethod via Reflection");
-                return;
+                return fallbackCameraTarget;
             }
 
-            swapColorBufferMethod.Invoke(renderer, new object[] {cmd});
-            // Debug.Log("Performed SwapColorBuffer()");
+            object colorBufferSystemObject = colorBufferSystemField.GetValue(renderer);
+            if (colorBufferSystemObject == null)
+            {
+                return fallbackCameraTarget;
+            }
+
+            Type colorBufferSystemType = colorBufferSystemObject.GetType();
+            MethodInfo methodInfo = colorBufferSystemType.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+            object bufferObject = methodInfo?.Invoke(colorBufferSystemObject, new object[] {cmd});
+
+            if (methodInfo == null || bufferObject == null)
+            {
+#if UNITY_EDITOR
+                #if !UNITY_2022_1_OR_NEWER // 2021
+                {
+                    // GetBackBuffer method was added in 2022
+                    if (methodName != "GetBackBuffer")
+                    {
+                        Debug.LogError($"Unable to access m_ColorBufferSystem.{methodName}() via System.Reflection." +
+                                         "Check the provided method name and/or whether the method exists.");
+                    }
+                }
+                #endif
+#endif
+                return fallbackCameraTarget;
+            }
+
+            // TODO: Replace usage of RenderTargetHandle with RTHandle for ver. 2022+
+            RenderTargetHandle colorBufferHandle = (RenderTargetHandle) bufferObject;
+            return colorBufferHandle.id;
         }
 
         public static RenderTargetIdentifier GetCameraColorBackBuffer(this ScriptableRenderer renderer, CommandBuffer cmd)
         {
-            UniversalRenderer universalRenderer = (UniversalRenderer) renderer;
-            Type universalRendererType = universalRenderer?.GetType();
-            FieldInfo colorBufferSystemField = universalRendererType?.GetField("m_ColorBufferSystem", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (colorBufferSystemField is null)
-            {
-                Debug.LogError("Unable to get m_ColorBufferSystem via System.Reflection.");
-                return new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
-            }
-
-            Type[] cmdBufferType = {typeof(CommandBuffer)};
-
-            object colorBufferSystemValue = colorBufferSystemField.GetValue(renderer);
-            Type colorBufferSystemType = colorBufferSystemValue?.GetType();
-            MethodInfo methodInfo = colorBufferSystemType?.GetMethod("GetBackBuffer", BindingFlags.Public | BindingFlags.Instance, null, cmdBufferType, null);
-            object backBufferObject = methodInfo?.Invoke(colorBufferSystemValue, new object[] {cmd});
-
-            if (backBufferObject == null)
-            {
-                Debug.LogError("Unable to access m_ColorBufferSystem.GetBackBuffer() method via System.Reflection.");
-                return new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
-            }
-
-            RenderTargetHandle backBufferHandle = (RenderTargetHandle) backBufferObject;
-            return backBufferHandle.id;
+            return GetCameraColorBufferInternal(renderer, cmd, "GetBackBuffer");
         }
 
         public static RenderTargetIdentifier GetCameraColorFrontBuffer(this ScriptableRenderer renderer, CommandBuffer cmd)
         {
-            UniversalRenderer universalRenderer = renderer as UniversalRenderer;
-            Type universalRendererType = universalRenderer?.GetType();
-            FieldInfo colorBufferSystemField = universalRendererType?.GetField("m_ColorBufferSystem", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (colorBufferSystemField is null)
-            {
-                Debug.LogError("Unable to get m_ColorBufferSystem via System.Reflection.");
-                return new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
-            }
-
-            object colorBufferSystemValue = colorBufferSystemField.GetValue(renderer);
-            Type colorBufferSystemType = colorBufferSystemValue?.GetType();
-            MethodInfo methodInfo = colorBufferSystemType?.GetMethod("GetFrontBuffer", BindingFlags.Public | BindingFlags.Instance);
-            object frontBufferObject = methodInfo?.Invoke(colorBufferSystemValue, new object[] {cmd});
-
-            if (frontBufferObject == null)
-            {
-                Debug.LogError("Unable to access m_ColorBufferSystem.GetFrontBuffer() method via System.Reflection.");
-                return new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
-            }
-
-            RenderTargetHandle frontBufferHandle = (RenderTargetHandle) frontBufferObject;
-            return frontBufferHandle.id;
+            return GetCameraColorBufferInternal(renderer, cmd, "GetFrontBuffer");
         }
     }
 
