@@ -1,31 +1,9 @@
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+#include "KinoCommon.hlsl"
+// #include "../../Fullscreen/Blit/Includes/FullscreenCommon.hlsl"
+// #include "../../Fullscreen/Blit/Includes/FullscreenBlit.hlsl"
 
-struct Attributes
-{
-    uint vertexID : SV_VertexID;
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-};
-
-struct Varyings
-{
-    float4 positionCS : SV_POSITION;
-    float2 texcoord   : TEXCOORD0;
-    UNITY_VERTEX_OUTPUT_STEREO
-};
-
-Varyings Vertex(Attributes input)
-{
-    Varyings output;
-    UNITY_SETUP_INSTANCE_ID(input);
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-    output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-    output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-    return output;
-}
-
-uint _Seed;
+CBUFFER_START(UnityPerMaterial)
+uint _GlitchSeed;
 
 float _BlockStrength;
 uint _BlockStride;
@@ -37,7 +15,8 @@ float2 _Jitter;
 float2 _Jump;
 float _Shake;
 
-TEXTURE2D_X(_InputTexture);
+TEXTURE2D_X(_PostSourceTexture);
+CBUFFER_END
 
 float FRandom(uint seed)
 {
@@ -48,7 +27,7 @@ float4 Fragment(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    float2 uv = input.texcoord;
+    float2 uv = KinoUV;
 
     #if defined(GLITCH_BLOCK)
 
@@ -60,7 +39,7 @@ float4 Fragment(Varyings input) : SV_Target
     uint columns = _ScreenSize.x / block_size;
 
     // Block index
-    uint2 block_xy = input.texcoord * _ScreenSize.xy / block_size;
+    uint2 block_xy = uv * _ScreenSize.xy / block_size;
     uint block = block_xy.y * columns + block_xy.x;
 
     // Segment index
@@ -77,7 +56,7 @@ float4 Fragment(Varyings input) : SV_Target
 
     // Screen space position reconstruction
     uint2 ssp = uint2(block % columns, block / columns) * block_size;
-    ssp += (uint2)(input.texcoord * _ScreenSize.xy) % block_size;
+    ssp += (uint2)(uv * _ScreenSize.xy) % block_size;
 
     // UV recalculation
     uv = frac((ssp + 0.5) / _ScreenSize.xy);
@@ -101,11 +80,11 @@ float4 Fragment(Varyings input) : SV_Target
     uint sy = ty * _ScreenSize.y;
 
     // Jitter
-    float jitter = Hash(sy + _Seed) * 2 - 1;
+    float jitter = Hash(sy + _GlitchSeed) * 2 - 1;
     tx += jitter * (_Jitter.x < abs(jitter)) * _Jitter.y;
 
     // Shake
-    tx = frac(tx + (Hash(_Seed) - 0.5) * _Shake);
+    tx = frac(tx + (Hash(_GlitchSeed) - 0.5) * _Shake);
 
     // Drift
     float drift = sin(ty * 2 + _Drift.x) * _Drift.y;
@@ -113,13 +92,13 @@ float4 Fragment(Varyings input) : SV_Target
     // Source sample
     uint sx1 = (tx        ) * _ScreenSize.x;
     uint sx2 = (tx + drift) * _ScreenSize.x;
-    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, uint2(sx1, sy));
-    float4 c2 = LOAD_TEXTURE2D_X(_InputTexture, uint2(sx2, sy));
+    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, uint2(sx1, sy));
+    float4 c2 = LOAD_TEXTURE2D_X(_PostSourceTexture, uint2(sx2, sy));
     float4 c = float4(c1.r, c2.g, c1.b, c1.a);
 
     #else
 
-    float4 c = LOAD_TEXTURE2D_X(_InputTexture, uv * _ScreenSize.xy);
+    float4 c = LOAD_TEXTURE2D_X(_PostSourceTexture, uv * _ScreenSize.xy);
 
     #endif
 
@@ -136,4 +115,5 @@ float4 Fragment(Varyings input) : SV_Target
     #endif
 
     return c;
+    
 }

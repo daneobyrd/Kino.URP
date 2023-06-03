@@ -6,9 +6,9 @@ Shader "Hidden/Kino/PostProcess/Glitch"
         {
             Cull Off ZWrite Off ZTest Always
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert            
             #pragma fragment Fragment
-            #include "Glitch.hlsl"
+            #include "Includes/Glitch.hlsl"
             ENDHLSL
         }
         Pass
@@ -16,9 +16,9 @@ Shader "Hidden/Kino/PostProcess/Glitch"
             Cull Off ZWrite Off ZTest Always
             HLSLPROGRAM
             #define GLITCH_BASIC
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
-            #include "Glitch.hlsl"
+            #include "Includes/Glitch.hlsl"
             ENDHLSL
         }
         Pass
@@ -26,9 +26,9 @@ Shader "Hidden/Kino/PostProcess/Glitch"
             Cull Off ZWrite Off ZTest Always
             HLSLPROGRAM
             #define GLITCH_BLOCK
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
-            #include "Glitch.hlsl"
+            #include "Includes/Glitch.hlsl"
             ENDHLSL
         }
         Pass
@@ -37,9 +37,9 @@ Shader "Hidden/Kino/PostProcess/Glitch"
             HLSLPROGRAM
             #define GLITCH_BASIC
             #define GLITCH_BLOCK
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
-            #include "Glitch.hlsl"
+            #include "Includes/Glitch.hlsl"
             ENDHLSL
         }
     }

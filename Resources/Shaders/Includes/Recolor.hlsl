@@ -1,37 +1,9 @@
-<<<<<<< HEAD:Resources/Recolor.hlsl
-#include "Packages/com.unity.postprocessing/PostProcessing/Shaders/StdLib.hlsl"
-#include "Packages/com.unity.postprocessing/PostProcessing/Shaders/Colors.hlsl"
-=======
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/NormalBuffer.hlsl"
->>>>>>> master:Packages/jp.keijiro.kino.post-processing/Resources/Recolor.hlsl
+#include "KinoCommon.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
 
-struct Attributes
-{
-    uint vertexID : SV_VertexID;
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-};
-
-struct Varyings
-{
-    float4 positionCS : SV_POSITION;
-    float2 texcoord   : TEXCOORD0;
-    UNITY_VERTEX_OUTPUT_STEREO
-};
-
-Varyings Vertex(Attributes input)
-{
-    Varyings output;
-    UNITY_SETUP_INSTANCE_ID(input);
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-    output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-    output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-    return output;
-}
-
-TEXTURE2D_X(_InputTexture);
+CBUFFER_START(UnityPerMaterial)
+TEXTURE2D_X(_PostSourceTexture);
 
 float4 _EdgeColor;
 float2 _EdgeThresholds;
@@ -48,22 +20,16 @@ float4 _ColorKey7;
 
 TEXTURE2D(_DitherTexture);
 float _DitherStrength;
-
-float3 LoadWorldNormal(uint2 positionSS)
-{
-    NormalData data;
-    DecodeFromNormalBuffer(positionSS, data);
-    return data.normalWS;
-}
+CBUFFER_END
 
 float4 Fragment(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    uint2 positionSS = input.texcoord * _ScreenSize.xy;
+    uint2 positionSS = KinoUV * _ScreenSize.xy;
 
     // Source color
-    float4 c0 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
+    float4 c0 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
 
     // Four sample points of the roberts cross operator
     // TL / BR / TR / BL
@@ -75,9 +41,9 @@ float4 Fragment(Varyings input) : SV_Target
 #ifdef RECOLOR_EDGE_COLOR
 
     // Color samples
-    float3 c1 = LOAD_TEXTURE2D_X(_InputTexture, uv1).rgb;
-    float3 c2 = LOAD_TEXTURE2D_X(_InputTexture, uv2).rgb;
-    float3 c3 = LOAD_TEXTURE2D_X(_InputTexture, uv3).rgb;
+    float3 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv1).rgb;
+    float3 c2 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv2).rgb;
+    float3 c3 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv3).rgb;
 
     // Roberts cross operator
     float3 g1 = c1 - c0.rgb;
@@ -89,10 +55,10 @@ float4 Fragment(Varyings input) : SV_Target
 #if defined(RECOLOR_EDGE_DEPTH) || defined(RECOLOR_EDGE_NORMAL)
 
     // Depth samples
-    float d0 = LoadCameraDepth(uv0);
-    float d1 = LoadCameraDepth(uv1);
-    float d2 = LoadCameraDepth(uv2);
-    float d3 = LoadCameraDepth(uv3);
+    float d0 = LoadSceneDepth(uv0);
+    float d1 = LoadSceneDepth(uv1);
+    float d2 = LoadSceneDepth(uv2);
+    float d3 = LoadSceneDepth(uv3);
 
 #endif
 
@@ -106,10 +72,10 @@ float4 Fragment(Varyings input) : SV_Target
 #ifdef RECOLOR_EDGE_NORMAL
 
     // Normal samples
-    float3 n0 = LoadWorldNormal(uv0);
-    float3 n1 = LoadWorldNormal(uv1);
-    float3 n2 = LoadWorldNormal(uv2);
-    float3 n3 = LoadWorldNormal(uv3);
+    float3 n0 = LoadSceneNormals(uv0);
+    float3 n1 = LoadSceneNormals(uv1);
+    float3 n2 = LoadSceneNormals(uv2);
+    float3 n3 = LoadSceneNormals(uv3);
 
     // Background removal
 #if UNITY_REVERSED_Z
@@ -160,5 +126,9 @@ float4 Fragment(Varyings input) : SV_Target
     float edge = smoothstep(_EdgeThresholds.x, _EdgeThresholds.y, g);
     float3 cb = lerp(c0.rgb, fill, _FillOpacity);
     float3 co = lerp(cb, _EdgeColor.rgb, edge * _EdgeColor.a);
-    return float4(co, c0.a);
+    float4 finalColor = float4(co, c0.a);
+    
+
+    
+    return finalColor;
 }

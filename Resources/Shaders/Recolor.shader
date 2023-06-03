@@ -8,28 +8,28 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_COLOR
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_DEPTH
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_NORMAL
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
 
@@ -37,31 +37,31 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_COLOR
             #define RECOLOR_GRADIENT_EXT
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_DEPTH
             #define RECOLOR_GRADIENT_EXT
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_NORMAL
             #define RECOLOR_GRADIENT_EXT
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
 
@@ -69,31 +69,31 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_COLOR
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_DEPTH
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_NORMAL
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
 
@@ -101,34 +101,34 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_COLOR
             #define RECOLOR_GRADIENT_EXT
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_DEPTH
             #define RECOLOR_GRADIENT_EXT
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             #define RECOLOR_EDGE_NORMAL
             #define RECOLOR_GRADIENT_EXT
             #define RECOLOR_GRADIENT_LERP
-            #include "Recolor.hlsl"
+            #include "Includes/Recolor.hlsl"
             ENDHLSL
         }
     }

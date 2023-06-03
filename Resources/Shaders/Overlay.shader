@@ -1,77 +1,40 @@
-<<<<<<< HEAD:Resources/Invert.shader
-Shader "Hidden/Kino/PostProcessing/Invert"
-=======
-Shader "Hidden/Kino/PostProcess/Overlay"
->>>>>>> master:Packages/jp.keijiro.kino.post-processing/Resources/Overlay.shader
+﻿Shader "Hidden/Kino/PostProcess/Overlay"
 {
     HLSLINCLUDE
-
-    #include "Packages/com.unity.postprocessing/PostProcessing/Shaders/StdLib.hlsl"
-    #include "Packages/com.unity.postprocessing/PostProcessing/Shaders/Colors.hlsl"
-
-    TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
-    half _Strength;
-
-    half4 Frag(VaryingsDefault i) : SV_Target
-    {
-        half4 c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord);
-
-<<<<<<< HEAD:Resources/Invert.shader
-    #ifndef UNITY_COLORSPACE_GAMMA
-        c.rgb = LinearToSRGB(c.rgb);
-    #endif
-
-        c.rgb = lerp(c.rgb, 1 - c.rgb, _Strength);
-
-    #ifndef UNITY_COLORSPACE_GAMMA
-        c.rgb = SRGBToLinear(c.rgb);
-    #endif
-
-        return c;
-    }
-
+    #include "Includes/Overlay.hlsl"
     ENDHLSL
 
     SubShader
     {
         Cull Off ZWrite Off ZTest Always
-        Pass
-        {
-            HLSLPROGRAM
-            #pragma vertex VertDefault
-            #pragma fragment Frag
-            #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
-=======
+
         // Normal mode (alpha blending)
 
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_NORMAL
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_NORMAL
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_NORMAL
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
@@ -80,31 +43,28 @@ Shader "Hidden/Kino/PostProcess/Overlay"
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_SCREEN
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_SCREEN
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_SCREEN
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
@@ -113,31 +73,28 @@ Shader "Hidden/Kino/PostProcess/Overlay"
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_OVERLAY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_OVERLAY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_OVERLAY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
@@ -146,31 +103,28 @@ Shader "Hidden/Kino/PostProcess/Overlay"
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_MULTIPLY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_MULTIPLY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_MULTIPLY
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
@@ -179,31 +133,28 @@ Shader "Hidden/Kino/PostProcess/Overlay"
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_SOFTLIGHT
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_SOFTLIGHT
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_SOFTLIGHT
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
@@ -212,32 +163,28 @@ Shader "Hidden/Kino/PostProcess/Overlay"
         Pass // Texture
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_HARDLIGHT
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 3 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_HARDLIGHT
-            #include "Overlay.hlsl"
             ENDHLSL
         }
 
         Pass // 8 keys gradient
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_HARDLIGHT
-            #include "Overlay.hlsl"
->>>>>>> master:Packages/jp.keijiro.kino.post-processing/Resources/Overlay.shader
             ENDHLSL
         }
     }

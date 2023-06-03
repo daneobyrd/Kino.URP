@@ -1,33 +1,18 @@
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+#include "KinoCommon.hlsl"
 
-struct Attributes
-{
-    uint vertexID : SV_VertexID;
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-};
+CBUFFER_START(UnityPerMaterial)
+TEXTURE2D_X(_PostSourceTexture);
+float3 _OverlayColor;
+float _OverlayOpacity;
 
-struct Varyings
-{
-    float4 positionCS : SV_POSITION;
-    float2 texcoord   : TEXCOORD0;
-    UNITY_VERTEX_OUTPUT_STEREO
-};
+//
+// Texture mode
+//
 
-Varyings Vertex(Attributes input)
-{
-    Varyings output;
-    UNITY_SETUP_INSTANCE_ID(input);
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-    output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-    output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-    return output;
-}
-
-TEXTURE2D_X(_InputTexture);
-float3 _Color;
-float _Opacity;
+TEXTURE2D(_OverlayTexture);
+SAMPLER(sampler_OverlayTexture);
+float _UseTextureAlpha;
+CBUFFER_END
 
 //
 // Blend function
@@ -75,31 +60,23 @@ float4 BlendFunction(float4 c1, float4 c2)
     return lerp(c1, c, c2.a);
 }
 
-//
-// Texture mode
-//
-
-TEXTURE2D(_OverlayTexture);
-SAMPLER(sampler_OverlayTexture);
-float _UseTextureAlpha;
-
 float4 FragmentTexture(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    uint2 positionSS = input.texcoord * _ScreenSize.xy;
-    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
-    float4 c2 = SAMPLE_TEXTURE2D(_OverlayTexture, sampler_OverlayTexture, input.texcoord);
+    uint2 positionSS = KinoUV * _ScreenSize.xy;
+    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+    float4 c2 = SAMPLE_TEXTURE2D(_OverlayTexture, sampler_OverlayTexture, KinoUV);
 
-    c1.rgb = LinearToSRGB(c1.rgb);
-    c2.rgb = LinearToSRGB(c2.rgb);
+    c1.rgb = GetLinearToSRGB(c1.rgb);
+    c2.rgb = GetLinearToSRGB(c2.rgb);
 
-    c2.rgb *= _Color;
-    c2.a = _Opacity * lerp(1, c2.a, _UseTextureAlpha);
+    c2.rgb *= _OverlayColor;
+    c2.a = _OverlayOpacity * lerp(1, c2.a, _UseTextureAlpha);
 
     float4 c = BlendFunction(c1, c2);
 
-    c.rgb = SRGBToLinear(c.rgb);
+    c.rgb = GetSRGBToLinear(c.rgb);
 
     return c;
 }
@@ -108,7 +85,7 @@ float4 FragmentTexture(Varyings input) : SV_Target
 // Gradient mode
 //
 
-float2 _Direction;
+float2 _GradientDirection;
 float4 _ColorKey0;
 float4 _ColorKey1;
 float4 _ColorKey2;
@@ -122,12 +99,12 @@ float4 FragmentGradient(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    uint2 positionSS = input.texcoord * _ScreenSize.xy;
-    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
+    uint2 positionSS = KinoUV * _ScreenSize.xy;
+    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
 
-    c1.rgb = LinearToSRGB(c1.rgb);
+    c1.rgb = GetLinearToSRGB(c1.rgb);
 
-    float p = dot(input.texcoord - 0.5f, _Direction) + 0.5f;
+    float p = dot(input.uv - 0.5f, _GradientDirection) + 0.5f;
     float3 c2 = _ColorKey0.rgb;
     c2 = lerp(c2, _ColorKey1.rgb, saturate((p - _ColorKey0.w) / (_ColorKey1.w - _ColorKey0.w)));
     c2 = lerp(c2, _ColorKey2.rgb, saturate((p - _ColorKey1.w) / (_ColorKey2.w - _ColorKey1.w)));
@@ -140,9 +117,9 @@ float4 FragmentGradient(Varyings input) : SV_Target
     c2 = lerp(c2, _ColorKey7.rgb, saturate((p - _ColorKey6.w) / (_ColorKey7.w - _ColorKey6.w)));
 #endif
 
-    float4 c = BlendFunction(c1, float4(c2, _Opacity));
+    float4 c = BlendFunction(c1, float4(c2, _OverlayOpacity));
 
-    c.rgb = SRGBToLinear(c.rgb);
-
+    c.rgb = GetSRGBToLinear(c.rgb);
+    
     return c;
 }

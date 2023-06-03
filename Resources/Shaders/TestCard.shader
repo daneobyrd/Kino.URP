@@ -2,36 +2,12 @@ Shader "Hidden/Kino/PostProcess/TestCard"
 {
     HLSLINCLUDE
 
-    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-    #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-
-    struct Attributes
-    {
-        uint vertexID : SV_VertexID;
-        UNITY_VERTEX_INPUT_INSTANCE_ID
-    };
-
-    struct Varyings
-    {
-        float4 positionCS : SV_POSITION;
-        float2 texcoord   : TEXCOORD0;
-        UNITY_VERTEX_OUTPUT_STEREO
-    };
-
-    Varyings Vertex(Attributes input)
-    {
-        Varyings output;
-        UNITY_SETUP_INSTANCE_ID(input);
-        UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-        output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-        output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-        return output;
-    }
-
-    TEXTURE2D_X(_InputTexture);
-    float _Opacity;
-
+    #include "Includes/KinoCommon.hlsl"
+    CBUFFER_START(UnityPerMaterial)
+    TEXTURE2D_X(_PostSourceTexture);
+    float _TestCardOpacity;
+    CBUFFER_END
+    
     float3 TestPattern(float2 uv)
     {
         float scale = 27 / _ScreenSize.y;        // Grid scale
@@ -67,6 +43,10 @@ Shader "Hidden/Kino/PostProcess/TestCard"
         // Circle lines
         rgb = lerp(rgb, 1, saturate(1.5 - abs(max(circle, corner)) / scale));
 
+        #if _LINEAR_TO_SRGB_CONVERSION
+        rgb = LinearToSRGB(rgb);
+        #endif
+        
         return rgb;
     }
 
@@ -75,12 +55,12 @@ Shader "Hidden/Kino/PostProcess/TestCard"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         // Source image
-        uint2 positionSS = input.texcoord * _ScreenSize.xy;
-        float4 c = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
+        uint2 positionSS = KinoUV * _ScreenSize.xy;
+        float4 c = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
 
         // Blend the test pattern in sRGB.
         c.rgb = LinearToSRGB(c.rgb);
-        c.rgb = lerp(c.rgb, TestPattern(input.texcoord), _Opacity);
+        c.rgb = lerp(c.rgb, TestPattern(KinoUV), _TestCardOpacity);
         c.rgb = SRGBToLinear(c.rgb);
 
         return c;
@@ -94,7 +74,7 @@ Shader "Hidden/Kino/PostProcess/TestCard"
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex Vertex
+            #pragma vertex Vert
             #pragma fragment Fragment
             ENDHLSL
         }
