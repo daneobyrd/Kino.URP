@@ -1,66 +1,91 @@
-﻿using System;
+﻿using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using SerializableAttribute = System.SerializableAttribute;
 
 namespace Kino.PostProcessing
 {
-    using UnityEngine;
-    using UnityEngine.Rendering;
-    using UnityEngine.Rendering.Universal;
-
     /// <summary>
     /// An injection point for the full screen pass. This is similar to RenderPassEvent enum but limits to only supported events.
     /// </summary>
-    [System.Serializable]
     public enum InjectionPoint
     {
+        AfterSkybox = RenderPassEvent.AfterRenderingSkybox,
         BeforeTransparents = RenderPassEvent.BeforeRenderingTransparents,
         BeforePostProcess = RenderPassEvent.BeforeRenderingPostProcessing,
-        AfterPostProcess = RenderPassEvent.AfterRenderingPostProcessing
+        AfterPostProcess = RenderPassEvent.AfterRenderingPostProcessing,
+        AfterRendering = RenderPassEvent.AfterRendering
     }
 
     public abstract class PostProcessVolumeComponent : VolumeComponent, IPostProcessComponent
     {
+        private bool isInitialized = false;
+        internal string typeName;
+
         protected PostProcessVolumeComponent()
         {
             string className = GetType().ToString();
-            int dotIndex = className.LastIndexOf(".", StringComparison.Ordinal) + 1;
+            int dotIndex = className.LastIndexOf(".", System.StringComparison.Ordinal) + 1;
             displayName = className[dotIndex..];
         }
 
-        protected Material m_Material;
-
-        public virtual InjectionPoint InjectionPoint { get; } = InjectionPoint.BeforePostProcess;
-
-        public virtual bool visibleInSceneView { get; } = true;
+        #region IPostProcessComponent
 
         public abstract bool IsActive();
         public          bool IsTileCompatible() { return false; }
 
-        protected virtual void Initialize() { }
+        #endregion
 
-        public virtual void Initialize(Material material) { m_Material = material; }
+        public Material material;
 
-        public abstract void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier source, RenderTargetIdentifier dest);
+        public virtual InjectionPoint InjectionPoint { get; } = InjectionPoint.AfterPostProcess;
 
-        internal bool isInitialized = false;
+        public virtual bool visibleInSceneView { get; } = true;
 
-        internal void SetupIfNeed()
-        {
-            if (isInitialized == true)
-                return;
+        /// <summary>
+        /// Setup function, called once before render is called.
+        /// </summary>
+        public virtual void Setup() { }
 
-            Initialize();
-            isInitialized = true;
-        }
+        // Set m_Material directly
+        public virtual void Setup(Material initMaterial) { this.material = initMaterial; }
+
+        // Set m_Material using resources or reference to shaders stored in ScriptableObject.
+        // Example: Unity's PostProcessData
+        public virtual void Setup(ScriptableObject scriptableObject) { }
         
-        internal void SetupIfNeed(Material material)
+        internal void SetupIfNeeded()
         {
-            if (isInitialized == true)
+            if (isInitialized)
                 return;
 
-            Initialize(material);
+            Setup();
             isInitialized = true;
+            typeName      = GetType().Name;
         }
 
+        internal void SetupIfNeeded(Material initMaterial)
+        {
+            if (isInitialized)
+                return;
+
+            Setup(initMaterial);
+            isInitialized = true;
+            typeName      = GetType().Name;
+        }
+
+        internal void SetupIfNeeded(ScriptableObject scriptableObject)
+        {
+            if (isInitialized)
+                return;
+
+            Setup(scriptableObject);
+            isInitialized = true;
+            typeName      = GetType().Name;
+        }
+
+        public abstract void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination);
+        
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -68,12 +93,12 @@ namespace Kino.PostProcessing
             Cleanup();
         }
 
-        protected virtual void Cleanup() { }
-
-        public static bool Equals(PostProcessVolumeComponent lhs, PostProcessVolumeComponent rhs) { return lhs.GetType() == rhs.GetType(); }
-
-        public static bool operator <(PostProcessVolumeComponent lhs, PostProcessVolumeComponent rhs) { return lhs.InjectionPoint < rhs.InjectionPoint; }
-
-        public static bool operator >(PostProcessVolumeComponent lhs, PostProcessVolumeComponent rhs) { return lhs.InjectionPoint > rhs.InjectionPoint; }
+        public virtual void Cleanup()
+        {
+            if (material != null)
+            {
+                CoreUtils.Destroy(material);
+            }
+        }
     }
 }

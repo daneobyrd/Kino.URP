@@ -1,13 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
-using static Kino.PostProcessing.KinoCore;
 using SerializableAttribute = System.SerializableAttribute;
 
 namespace Kino.PostProcessing
 {
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Glitch")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Glitch")]
     public sealed class Glitch : PostProcessVolumeComponent
     {
         public ClampedFloatParameter block = new(0, 0, 1);
@@ -15,6 +12,31 @@ namespace Kino.PostProcessing
         public ClampedFloatParameter jitter = new(0, 0, 1);
         public ClampedFloatParameter jump = new(0, 0, 1);
         public ClampedFloatParameter shake = new(0, 0, 1);
+        
+        #region Private members
+        
+        float _prevTime;
+        float _jumpTime;
+
+        float _blockTime;
+        int _blockSeed1 = 71;
+        int _blockSeed2 = 113;
+        int _blockStride = 1;
+        
+        private static class ShaderIDs
+        {
+            internal static readonly int GlitchSeed = Shader.PropertyToID("_GlitchSeed");
+            internal static readonly int BlockSeed1 = Shader.PropertyToID("_BlockSeed1");
+            internal static readonly int BlockSeed2 = Shader.PropertyToID("_BlockSeed2");
+            internal static readonly int BlockStrength = Shader.PropertyToID("_BlockStrength");
+            internal static readonly int BlockStride = Shader.PropertyToID("_BlockStride");
+            internal static readonly int Drift = Shader.PropertyToID("_Drift");
+            internal static readonly int Jitter = Shader.PropertyToID("_Jitter");
+            internal static readonly int Jump = Shader.PropertyToID("_Jump");
+            internal static readonly int Shake = Shader.PropertyToID("_Shake");
+        }
+        
+        #endregion
         
         public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
 
@@ -27,15 +49,13 @@ namespace Kino.PostProcessing
                    shake.value > 0;
         }
 
-        float _prevTime;
-        float _jumpTime;
+        public override void Setup(ScriptableObject scriptableObject)
+        {
+            var data = (KinoPostProcessData) scriptableObject;
+            material ??= CoreUtils.CreateEngineMaterial(data.shaders.GlitchPS);
+        }
 
-        float _blockTime;
-        int _blockSeed1 = 71;
-        int _blockSeed2 = 113;
-        int _blockStride = 1;
-
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier source, RenderTargetIdentifier dest)
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination)
         {
             // if (m_Material == null) return;
 
@@ -77,16 +97,16 @@ namespace Kino.PostProcessing
             var vjump = new Vector2(_jumpTime, jump.value);
 
             // Invoke the shader.
-            m_Material.SetInt(ShaderIDs.GlitchSeed, (int) (time * 10000));
-            m_Material.SetFloat(ShaderIDs.BlockStrength, block3);
-            m_Material.SetInt(ShaderIDs.BlockStride, _blockStride);
-            m_Material.SetInt(ShaderIDs.BlockSeed1, _blockSeed1);
-            m_Material.SetInt(ShaderIDs.BlockSeed2, _blockSeed2);
-            m_Material.SetVector(ShaderIDs.Drift, vdrift);
-            m_Material.SetVector(ShaderIDs.Jitter, vjitter);
-            m_Material.SetVector(ShaderIDs.Jump, vjump);
-            m_Material.SetFloat(ShaderIDs.Shake, shake.value * 0.2f);
-            cmd.SetPostProcessSourceTexture(source);
+            material.SetInt(ShaderIDs.GlitchSeed, (int) (time * 10000));
+            material.SetFloat(ShaderIDs.BlockStrength, block3);
+            material.SetInt(ShaderIDs.BlockStride, _blockStride);
+            material.SetInt(ShaderIDs.BlockSeed1, _blockSeed1);
+            material.SetInt(ShaderIDs.BlockSeed2, _blockSeed2);
+            material.SetVector(ShaderIDs.Drift, vdrift);
+            material.SetVector(ShaderIDs.Jitter, vjitter);
+            material.SetVector(ShaderIDs.Jump, vjump);
+            material.SetFloat(ShaderIDs.Shake, shake.value * 0.2f);
+            cmd.SetPostProcessInputTexture(source);
 
             // Shader pass number
             var pass = 0;
@@ -94,7 +114,7 @@ namespace Kino.PostProcessing
             if (block.value > 0) pass                                                          += 2;
 
             // Blit
-            cmd.DrawFullScreenTriangle(m_Material, dest, pass);
+            cmd.DrawFullScreenTriangle(material, destination, pass);
         }
     }
 }

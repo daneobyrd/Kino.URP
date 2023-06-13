@@ -1,13 +1,11 @@
+using UnityEngine;
+using UnityEngine.Rendering;
+
 namespace Kino.PostProcessing
 {
-    using UnityEngine;
-    using UnityEngine.Rendering;
-    using UnityEngine.Rendering.Universal;
-    using static KinoCore;
     using SerializableAttribute = System.SerializableAttribute;
 
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Recolor")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Recolor")]
     public sealed class Recolor : PostProcessVolumeComponent
     {
         #region Local enum parameters
@@ -44,11 +42,13 @@ namespace Kino.PostProcessing
         public DitherTypeParameter ditherType = new() {value = DitherType.Bayer4x4};
         public ClampedFloatParameter ditherStrength = new(0, 0, 1);
 
+        public override bool IsActive() => (edgeColor.value.a > 0 || fillOpacity.value > 0);
+
         public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
 
-        public override bool IsActive() => (edgeColor.value.a > 0 || fillOpacity.value > 0);
-        
-        static class ShaderIDs
+        #region Private members
+
+        private static class ShaderIDs
         {
             internal static readonly int DitherStrength = Shader.PropertyToID("_DitherStrength");
             internal static readonly int DitherTexture = Shader.PropertyToID("_DitherTexture");
@@ -64,7 +64,15 @@ namespace Kino.PostProcessing
         DitherType _ditherType;
         Texture2D _ditherTexture;
 
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        #endregion
+
+        public override void Setup(ScriptableObject scriptableObject)
+        {
+            var data = (KinoPostProcessData) scriptableObject;
+            material ??= CoreUtils.CreateEngineMaterial(data.shaders.RecolorPS);
+        }
+
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
         {
             if (_ditherType != ditherType.value || _ditherTexture == null)
             {
@@ -102,27 +110,27 @@ namespace Kino.PostProcessing
                 edgeThresh = new Vector2(t1, t2);
             }
 
-            m_Material.SetColor((int) ShaderIDs.EdgeColor, edgeColor.value);
-            m_Material.SetVector((int) ShaderIDs.EdgeThresholds, edgeThresh);
-            m_Material.SetFloat((int) ShaderIDs.FillOpacity, fillOpacity.value);
-            GradientUtility.SetColorKeys(m_Material, _cachedColorKeys);
+            material.SetColor(ShaderIDs.EdgeColor, edgeColor.value);
+            material.SetVector(ShaderIDs.EdgeThresholds, edgeThresh);
+            material.SetFloat(ShaderIDs.FillOpacity, fillOpacity.value);
+            GradientUtility.SetColorKeys(material, _cachedColorKeys);
 
-            m_Material.SetTexture((int) ShaderIDs.DitherTexture, _ditherTexture);
-            m_Material.SetFloat((int) ShaderIDs.DitherStrength, ditherStrength.value);
+            material.SetTexture(ShaderIDs.DitherTexture, _ditherTexture);
+            material.SetFloat(ShaderIDs.DitherStrength, ditherStrength.value);
 
             var pass = (int) edgeSource.value;
             if (fillOpacity.value > 0 && _cachedColorKeys.Length > 4) pass += 3;
             if (fillGradient.value.mode == GradientMode.Blend) pass        += 6;
 
             // Blit to destRT with the overlay shader.
-            cmd.SetGlobalTexture((int) ShaderIDs.SourceTexture, srcRT);
-            cmd.DrawFullScreenTriangle(m_Material, destRT, pass);
+            cmd.SetGlobalTexture(ShaderIDs.SourceTexture, srcRT);
+            cmd.DrawFullScreenTriangle(material, destRT, pass);
         }
 
-        protected override void Cleanup()
+        public override void Cleanup()
         {
             CoreUtils.Destroy(_ditherTexture);
-            // CoreUtils.Destroy(m_Material);
+            base.Cleanup();
         }
 
         #region Dither texture generator

@@ -1,110 +1,113 @@
-using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
+using System.Collections.Generic;
+using SerializableAttribute = System.SerializableAttribute;
 
 namespace Kino.PostProcessing
 {
-    using UnityEngine;
-    using UnityEngine.Rendering;
-    using UnityEngine.Rendering.Universal;
-    using static KinoCore;
-    using SerializableAttribute = System.SerializableAttribute;
+    using static CustomPostProcessUtils;
 
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Streak")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Streak")]
     public sealed class Streak : PostProcessVolumeComponent
     {
         public ClampedFloatParameter threshold = new(1, 0, 5);
         public ClampedFloatParameter stretch = new(0.75f, 0, 1);
         public ClampedFloatParameter intensity = new(0, 0, 1);
         public ColorParameter tint = new(new Color(0.55f, 0.55f, 1), false, false, true);
+        public override bool IsActive() => intensity.value > 0;
 
         public override InjectionPoint InjectionPoint => InjectionPoint.BeforePostProcess;
 
-        public override bool IsActive() => intensity.value > 0;
+        #region Private members
+
+        private static class ShaderIDs
+        {
+            internal static readonly int SourceTexture = Shader.PropertyToID("_SourceTexture");
+
+            internal static readonly int StreakColor = Shader.PropertyToID("_StreakColor");
+            internal static readonly int SourceTexLowMip = Shader.PropertyToID("_SourceTexLowMip");
+            internal static readonly int StreakIntensity = Shader.PropertyToID("_StreakIntensity");
+            internal static readonly int Stretch = Shader.PropertyToID("_Stretch");
+
+            internal static readonly int Threshold = Shader.PropertyToID("_Threshold");
+        }
 
         // Image pyramid storage
         // We have to use different pyramids for each camera, so we use a
         // dictionary and camera GUIDs as a key to store each pyramid.
         private Dictionary<int, StreakPyramid> _pyramids;
-        const GraphicsFormat RTFormat = GraphicsFormat.R16G16B16A16_SFloat;
+        private const GraphicsFormat RTFormat = GraphicsFormat.R16G16B16A16_SFloat;
+        private CameraData _cameraData;
+        private CommandBuffer _commandBuffer;
 
-        private StreakPyramid GetPyramid(ref CommandBuffer cmd, CameraData cameraData)
+        #endregion
+        
+        public void SetCameraData(CameraData cameraData) { _cameraData = cameraData; }
+
+        private StreakPyramid GetPyramid(ref CommandBuffer cmd)
         {
-            var cameraID = cameraData.camera.GetInstanceID();
-            var size = new Vector2Int(cameraData.cameraTargetDescriptor.width, cameraData.cameraTargetDescriptor.width);
+            var cameraID = _cameraData.camera.GetInstanceID();
+            _cameraData.cameraTargetDescriptor.graphicsFormat = RTFormat;
+
+
             if (_pyramids.TryGetValue(cameraID, out var candid))
             {
                 // Reallocate the RTs when the screen size was changed.
-                if (!candid.CheckSize(cameraData.camera))
-                    candid.Reallocate(cmd, size);
+                if (!candid.CheckSize(_cameraData.cameraTargetDescriptor))
+                    candid.SetupShaderIDs();
+                candid.Reallocate(cmd, _cameraData.cameraTargetDescriptor);
             }
             else
             {
                 // No one found: Allocate a new pyramid.
-                _pyramids[cameraID] = candid = new StreakPyramid(size);
+                _pyramids[cameraID] = candid = new StreakPyramid(cmd, _cameraData.cameraTargetDescriptor);
             }
 
             return candid;
         }
 
-        public override void Initialize(Material material)
+        public override void Setup(ScriptableObject scriptableObject)
         {
-            base.Initialize(material);
-            _pyramids = new Dictionary<int, StreakPyramid>();
+            var data = (KinoPostProcessData) scriptableObject;
+            material  ??= CoreUtils.CreateEngineMaterial(data.shaders.StreakPS);
+            _pyramids =   new Dictionary<int, StreakPyramid>();
         }
 
         // -------Prefilter--------
-        // Source -> Prefilter -> MIP 0.down
+        // Source -> Prefilter Shader -> _mips[0].down
 
         // -------Downsample-------
-        // MIP 0.down - MIP 1.down
-        // MIP 1.down - MIP 2.down
+        // _mips[0].down -> _mips[1].down
+        // _mips[1].down -> _mips[2].down
         // ...
-        // MIP 6.down - MIP 7.down
+        // _mips[6].down -> _mips[7].down
 
         // -------Upsample---------
-        // MIP 7.down - MIP 6.up
-        // MIP 6.up   - MIP 5.up
+        // _mips[7].down -> _mips[6].up
+        // _mips[6].up   -> _mips[5].up
         // ...
-        // MIP 2.up   - MIP 1.up
+        // _mips[2].up   -> _mips[1].up
 
         // -------Composite--------
-        // MIP 1.up   - Destination
+        // _mips[1].up   - Destination
 
-        private BuiltinRenderTextureType BlitDstDiscardContent(CommandBuffer cmd, RenderTargetIdentifier rt)
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination)
         {
-            // We set depth to DontCare because rt might be the source of PostProcessing used as a temporary target
-            // Source typically comes with a depth buffer and right now we don't have a way to only bind the color attachment of a RenderTargetIdentifier
-            cmd.SetRenderTarget
-            (
-                new RenderTargetIdentifier(rt, 0, CubemapFace.Unknown, -1),
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare
-            );
-            return BuiltinRenderTextureType.CurrentActive;
-        }
-
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier source, RenderTargetIdentifier dest)
-        {
-            var pyramid = GetPyramid(ref cmd, cameraData);
-
-            var desc = cameraData.cameraTargetDescriptor;
-            desc.graphicsFormat = RTFormat;
-
-            // Start at half-res
-            int tw = pyramid._baseWidth;
-            int th = pyramid._baseHeight >> 1;
+            _commandBuffer = cmd;
+            var pyramid = GetPyramid(ref cmd);
 
             float linearThreshold = Mathf.GammaToLinearSpace(threshold.value);
 
             #region Set Shader Properties
 
             // Common parameters
-            m_Material.SetFloat(ShaderIDs.Threshold, linearThreshold);
-            m_Material.SetFloat(ShaderIDs.Stretch, stretch.value);
-            m_Material.SetFloat(ShaderIDs.StreakIntensity, intensity.value);
-            m_Material.SetColor(ShaderIDs.StreakColor, tint.value);
-            cmd.SetGlobalTexture(ShaderIDs.SourceColorTexture, source);
+            material.SetFloat(ShaderIDs.Threshold, linearThreshold);
+            material.SetFloat(ShaderIDs.Stretch, stretch.value);
+            material.SetFloat(ShaderIDs.StreakIntensity, intensity.value);
+            material.SetColor(ShaderIDs.StreakColor, tint.value);
+            cmd.SetGlobalTexture(ShaderIDs.SourceTexture, source);
 
             #endregion
 
@@ -117,29 +120,24 @@ namespace Kino.PostProcessing
             //
             // Prefilter
             //
-            cmd.GetTemporaryRT(pyramid[0].down, desc, FilterMode.Bilinear);
-            cmd.SetPostProcessSourceTexture(source);
-            // Source -> Prefilter -> MIP 0
-            cmd.DrawFullScreenTriangle(m_Material, pyramid[0].down, prefilterPass);
+            // Source -> Prefilter -> _mips[0]
+            var prefilterDestination = pyramid[0].down;
+            PostProcessBlit(cmd, prefilterDestination, material, prefilterPass);
 
             //
             // Downsample
             //
-            var lastDown = pyramid[0].down;
-            for (var i = 1; i < pyramid.mipCount; i++)
+            var lastDown = prefilterDestination;
+            var mipLevel = 1;
+            for (; mipLevel < pyramid.MipCount; mipLevel++)
             {
-                tw = Mathf.Max(1, tw >> 1);
+                // lastDown = pyramid[i-1].down;
+                var mipDown = pyramid[mipLevel].down;
 
-                var mipDown = pyramid[i].down;
+                cmd.SetPostProcessInputTexture(lastDown);
+                PostProcessBlit(cmd, mipDown, material, downsamplePass);
 
-                desc.width  = tw;
-                desc.height = th;
-
-                cmd.GetTemporaryRT(lastDown, desc, FilterMode.Bilinear);
-                cmd.GetTemporaryRT(mipDown, desc, FilterMode.Bilinear);
-                // cmd.SetPostProcessSourceTexture(pyramid[i - 1].down);
-                CustomPostProcessUtils.Blit(cmd, source: mipDown, destination: BlitDstDiscardContent(cmd, pyramid[i - 1].down), m_Material, downsamplePass);
-
+                // set with used mipDown 
                 lastDown = mipDown;
             }
 
@@ -148,89 +146,138 @@ namespace Kino.PostProcessing
             //
             // Upsample & combine
             //
-            for (var i = pyramid.mipCount - 2; i >= 0; i--)
+            var maxMipLevel = pyramid.MipCount - 1;
+            for (; mipLevel >= 0; mipLevel--)
             {
-                var mip = pyramid[i];
+                var isFirstUpsample = (mipLevel == maxMipLevel);
 
-                int lowMip = (i == pyramid.mipCount - 2) ? pyramid[i + 1].down : pyramid[i + 1].up;
+                var mip = pyramid[mipLevel];
+
+                int lowMip =
+                    isFirstUpsample
+                        ? pyramid[mipLevel + 1].down
+                        : pyramid[mipLevel + 1].up;
                 int highMip = mip.down;
                 int dst = mip.up;
 
                 cmd.SetGlobalTexture(ShaderIDs.SourceTexLowMip, lowMip);
-                cmd.SetPostProcessSourceTexture(lastRT);
-                cmd.DrawFullScreenTriangle(m_Material, mip.up, upsamplePass);
-                lastRT = mip.up;
+                cmd.SetPostProcessInputTexture(highMip);
+                cmd.DrawFullScreenTriangle(material, dst, upsamplePass);
+                lastRT = dst;
             }
 
             // Final composition
-            cmd.SetPostProcessSourceTexture(lastRT);
-            cmd.DrawFullScreenTriangle(m_Material, dest, compositePass);
-
-            pyramid.Release(cmd);
-        }
-    }
-
-    #region Image pyramid class used in Streak effect
-
-    public sealed class StreakPyramid
-    {
-        private const int MaxMipLevel = 16;
-
-        public int _baseWidth;
-        public int _baseHeight;
-        private int maxSize;
-        private int iterations;
-        public int mipCount;
-
-        readonly (int down, int up)[] _mips = new (int, int) [MaxMipLevel];
-
-        public (int down, int up) this[int index] => _mips[index];
-
-        public StreakPyramid(Vector2Int size) { Allocate(size); }
-
-        public bool CheckSize(Camera camera)
-        {
-            return _baseWidth == Mathf.FloorToInt(camera.pixelRect.width) &&
-                   _baseHeight == Mathf.FloorToInt(camera.pixelRect.width);
+            cmd.SetPostProcessInputTexture(lastRT);
+            cmd.DrawFullScreenTriangle(material, destination, compositePass);
         }
 
-        public void Reallocate(CommandBuffer cmd, Vector2Int size)
+        public override void Cleanup()
         {
-            Release(cmd);
-            Allocate(size);
+            base.Cleanup();
+            foreach (var pyramid in _pyramids.Values) pyramid.Release(_commandBuffer);
         }
 
-        public void Release(CommandBuffer cmd)
+        #region Image pyramid class used in Streak effect
+
+        public sealed class StreakPyramid
         {
-            foreach (var (mipDown, mipUp) in _mips)
+            private const int MaxMipLevel = 16;
+
+            private int _baseWidth;
+            private int _baseHeight;
+            private int _maxSize;
+            private int _iterations;
+            public int MipCount; // default
+
+            readonly (int down, int up)[] _mips = new (int, int) [MaxMipLevel];
+
+            public (int down, int up) this[int index] => _mips[index];
+
+            public StreakPyramid(CommandBuffer cmd, RenderTextureDescriptor descriptor)
             {
-                cmd.ReleaseTemporaryRT(mipDown);
-                cmd.ReleaseTemporaryRT(mipUp);
+                SetMipCount(descriptor);
+                SetupShaderIDs();
+                Allocate(cmd, descriptor);
+            }
+
+            private void SetMipCount(RenderTextureDescriptor descriptor)
+            {
+                _baseWidth  =   Mathf.Max(descriptor.width, 1);
+                _baseHeight =   Mathf.Max(descriptor.height, 1);
+                
+                _baseWidth  >>= 1;
+                _baseHeight >>= 1;
+
+                _maxSize = Mathf.Max(_baseWidth, _baseHeight >> 1);
+
+                // Determine the iteration count
+                // 1920 = 9, 2560 = 10, 3840 = 10
+                _iterations = Mathf.FloorToInt(Mathf.Log(_maxSize, 2f) - 1);
+                MipCount    = Mathf.Clamp(_iterations, 1, MaxMipLevel);
+                Debug.Log($"{nameof(_iterations)}: {_iterations}");
+                Debug.Log($"{nameof(MipCount)}: {MipCount}");
+            }
+
+            public bool CheckSize(RenderTextureDescriptor descriptor)
+            {
+                return _baseWidth == Mathf.FloorToInt(descriptor.width) &&
+                       _baseHeight == Mathf.FloorToInt(descriptor.height);
+            }
+
+            public void Reallocate(CommandBuffer cmd, RenderTextureDescriptor descriptor)
+            {
+                SetMipCount(descriptor);
+                Release(cmd);
+                SetupShaderIDs();
+                Allocate(cmd, descriptor);
+            }
+
+            public void Release(CommandBuffer cmd)
+            {
+                for (var i = 0; i < MipCount; i++)
+                {
+                    cmd.ReleaseTemporaryRT(_mips[i].down);
+                    cmd.ReleaseTemporaryRT(_mips[i].up);
+                    // Clear _mips int values
+                    _mips[i] = (-1, -1);
+                }
+            }
+
+            public void SetupShaderIDs()
+            {
+                for (var i = 0; i < _mips.Length; i++)
+                {
+                    _mips[i] = (Shader.PropertyToID("_StreakMipDown" + i),
+                                Shader.PropertyToID("_StreakMipUp" + i));
+                }
+            }
+
+            void Allocate(CommandBuffer cmd, RenderTextureDescriptor descriptor)
+            {
+                // Start at half-res
+                int width = _baseWidth;
+                int height = _baseHeight >> 1;
+
+                descriptor.width  = width;
+                descriptor.height = height;
+
+                cmd.GetTemporaryRT(_mips[0].down, descriptor);
+                cmd.GetTemporaryRT(_mips[0].up, descriptor);
+
+                // should break when (width < 4)
+                for (var i = 1; i < MipCount; i++)
+                {
+                    width = Mathf.Max(1, width >> 1);
+
+                    descriptor.width  = width;
+                    descriptor.height = height;
+
+                    cmd.GetTemporaryRT(_mips[i].down, descriptor);
+                    cmd.GetTemporaryRT(_mips[i].up, descriptor);
+                }
             }
         }
 
-        void Allocate(Vector2Int size)
-        {
-            _baseWidth  = Mathf.Max(size.x, 1);
-            _baseHeight = Mathf.Max(size.y, 1);
-
-            maxSize = Mathf.Max(_baseWidth, _baseHeight >> 1);
-
-            // Determine the iteration count
-            // 1920 = 9, 2560 = 10, 3840 = 10
-            iterations = Mathf.FloorToInt(Mathf.Log(maxSize, 2f) - 1);
-            mipCount   = Mathf.Clamp(iterations, 1, MaxMipLevel);
-
-            _mips[0] = (Shader.PropertyToID("_StreakMipDown" + "0"), Shader.PropertyToID("_StreakMipUp" + "0"));
-
-            // Will break if (width < 4)
-            for (var i = 1; i < mipCount; i++)
-            {
-                _mips[i] = (Shader.PropertyToID("_StreakMipDown" + i),
-                            Shader.PropertyToID("_StreakMipUp" + i));
-            }
-        }
+        #endregion
     }
-
-    #endregion
 }

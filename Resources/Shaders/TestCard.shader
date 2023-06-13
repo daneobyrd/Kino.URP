@@ -3,10 +3,10 @@ Shader "Hidden/Kino/PostProcess/TestCard"
     HLSLINCLUDE
 
     #include "Includes/KinoCommon.hlsl"
-    CBUFFER_START(UnityPerMaterial)
-    TEXTURE2D_X(_PostSourceTexture);
+    // CBUFFER_START(UnityPerMaterial)
+    TEXTURE2D_X(_InputTexture);
     float _TestCardOpacity;
-    CBUFFER_END
+    // CBUFFER_END
     
     float3 TestPattern(float2 uv)
     {
@@ -43,9 +43,9 @@ Shader "Hidden/Kino/PostProcess/TestCard"
         // Circle lines
         rgb = lerp(rgb, 1, saturate(1.5 - abs(max(circle, corner)) / scale));
 
-        #if _LINEAR_TO_SRGB_CONVERSION
-        rgb = LinearToSRGB(rgb);
-        #endif
+        // #if _LINEAR_TO_SRGB_CONVERSION
+        // rgb = LinearToSRGB(rgb);
+        // #endif
         
         return rgb;
     }
@@ -56,7 +56,7 @@ Shader "Hidden/Kino/PostProcess/TestCard"
 
         // Source image
         uint2 positionSS = KinoUV * _ScreenSize.xy;
-        float4 c = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+        float4 c = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
 
         // Blend the test pattern in sRGB.
         c.rgb = LinearToSRGB(c.rgb);

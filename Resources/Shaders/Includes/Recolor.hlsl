@@ -3,7 +3,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
 
 CBUFFER_START(UnityPerMaterial)
-TEXTURE2D_X(_PostSourceTexture);
+TEXTURE2D_X(_InputTexture);
 
 float4 _EdgeColor;
 float2 _EdgeThresholds;
@@ -29,7 +29,7 @@ float4 Fragment(Varyings input) : SV_Target
     uint2 positionSS = KinoUV * _ScreenSize.xy;
 
     // Source color
-    float4 c0 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+    float4 c0 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
 
     // Four sample points of the roberts cross operator
     // TL / BR / TR / BL
@@ -41,9 +41,9 @@ float4 Fragment(Varyings input) : SV_Target
 #ifdef RECOLOR_EDGE_COLOR
 
     // Color samples
-    float3 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv1).rgb;
-    float3 c2 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv2).rgb;
-    float3 c3 = LOAD_TEXTURE2D_X(_PostSourceTexture, uv3).rgb;
+    float3 c1 = LOAD_TEXTURE2D_X(_InputTexture, uv1).rgb;
+    float3 c2 = LOAD_TEXTURE2D_X(_InputTexture, uv2).rgb;
+    float3 c3 = LOAD_TEXTURE2D_X(_InputTexture, uv3).rgb;
 
     // Roberts cross operator
     float3 g1 = c1 - c0.rgb;

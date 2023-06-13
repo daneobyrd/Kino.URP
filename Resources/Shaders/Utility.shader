@@ -9,7 +9,7 @@ Shader "Hidden/Kino/PostProcess/Utility"
     float _HueShift;
     float _Invert;
     float _Saturation;
-    TEXTURE2D_X(_PostSourceTexture);
+    TEXTURE2D_X(_InputTexture);
     CBUFFER_END
 
     float4 Fragment(Varyings input) : SV_Target
@@ -17,7 +17,7 @@ Shader "Hidden/Kino/PostProcess/Utility"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         uint2 positionSS = KinoUV * _ScreenSize.xy;
-        float4 c = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+        float4 c = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
         float3 rgb = c.rgb;
 
         // Saturation

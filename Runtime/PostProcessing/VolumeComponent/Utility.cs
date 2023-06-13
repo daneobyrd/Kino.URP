@@ -1,17 +1,14 @@
-﻿using UnityEngine.Rendering.Universal;
+﻿using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Kino.PostProcessing
 {
-    using UnityEngine;
-    using UnityEngine.Assertions.Comparers;
-    using UnityEngine.Rendering;
-    using static KinoCore;
     using SerializableAttribute = System.SerializableAttribute;
 
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Streak")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Streak")]
     public sealed class Utility : PostProcessVolumeComponent
     {
+
         public ClampedFloatParameter saturation = new(1, 0, 2);
         public ClampedFloatParameter hueShift = new(0, -1, 1);
         public ClampedFloatParameter invert = new(0, 0, 1);
@@ -19,25 +16,38 @@ namespace Kino.PostProcessing
 
         public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
 
-        private FloatComparer _floatComparer = new();
+        private static class ShaderIDs
+        {
+            internal static readonly int FadeColor = Shader.PropertyToID("_FadeColor");
+            internal static readonly int HueShift = Shader.PropertyToID("_HueShift");
+            internal static readonly int Invert = Shader.PropertyToID("_Invert");
+
+            internal static readonly int Saturation = Shader.PropertyToID("_Saturation");
+        }
 
         public override bool IsActive() =>
-            !_floatComparer.Equals(saturation.value, 1)
-            || !_floatComparer.Equals(hueShift.value, 0)
+            !Mathf.Approximately(saturation.value, 1)
+            || !Mathf.Approximately(hueShift.value, 0)
             || invert.value > 0
             || fade.value.a > 0;
-        
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+
+        public override void Setup(ScriptableObject scriptableObject)
         {
-            if (m_Material == null) return;
+            var data = (KinoPostProcessData) scriptableObject;
+            material = CoreUtils.CreateEngineMaterial(data.shaders.UtilityPS);
+        }
 
-            m_Material.SetColor(ShaderIDs.FadeColor, fade.value);
-            m_Material.SetFloat(ShaderIDs.HueShift, hueShift.value);
-            m_Material.SetFloat(ShaderIDs.Invert, invert.value);
-            m_Material.SetFloat(ShaderIDs.Saturation, saturation.value);
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        {
+            if (material == null) return;
 
-            cmd.SetPostProcessSourceTexture(srcRT);
-            cmd.DrawFullScreenTriangle(m_Material, destRT);
+            material.SetColor(ShaderIDs.FadeColor, fade.value);
+            material.SetFloat(ShaderIDs.HueShift, hueShift.value);
+            material.SetFloat(ShaderIDs.Invert, invert.value);
+            material.SetFloat(ShaderIDs.Saturation, saturation.value);
+
+            cmd.SetPostProcessInputTexture(srcRT);
+            cmd.DrawFullScreenTriangle(material, destRT);
         }
     }
 }

@@ -1,27 +1,35 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Kino.PostProcessing
 {
-    using UnityEngine.Rendering;
-    using UnityEngine.Rendering.Universal;
-    using static KinoCore;
     using SerializableAttribute = System.SerializableAttribute;
 
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Test Card")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Test Card")]
     public sealed class TestCard : PostProcessVolumeComponent
     {
+        private static class ShaderIDs
+        {
+            internal static readonly int TestCardOpacity = Shader.PropertyToID("_TestCardOpacity");
+        }
+
         public ClampedFloatParameter opacity = new(0, 0, 1);
 
         public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
 
         public override bool IsActive() => opacity.value > 0;
 
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        public override void Setup(ScriptableObject scriptableObject)
         {
-            m_Material.SetFloat(ShaderIDs.TestCardOpacity, opacity.value);
-            cmd.SetPostProcessSourceTexture(srcRT);
-            cmd.DrawFullScreenTriangle(m_Material, destRT);
+            var data = (KinoPostProcessData) scriptableObject;
+            material ??= CoreUtils.CreateEngineMaterial(data.shaders.TestCardPS);
+        }
+
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        {
+            material.SetFloat(ShaderIDs.TestCardOpacity, opacity.value);
+            cmd.SetPostProcessInputTexture(srcRT);
+            cmd.DrawFullScreenTriangle(material, destRT);
         }
     }
 }

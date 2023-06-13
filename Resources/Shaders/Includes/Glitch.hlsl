@@ -15,7 +15,7 @@ float2 _Jitter;
 float2 _Jump;
 float _Shake;
 
-TEXTURE2D_X(_PostSourceTexture);
+TEXTURE2D_X(_InputTexture);
 CBUFFER_END
 
 float FRandom(uint seed)
@@ -92,13 +92,13 @@ float4 Fragment(Varyings input) : SV_Target
     // Source sample
     uint sx1 = (tx        ) * _ScreenSize.x;
     uint sx2 = (tx + drift) * _ScreenSize.x;
-    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, uint2(sx1, sy));
-    float4 c2 = LOAD_TEXTURE2D_X(_PostSourceTexture, uint2(sx2, sy));
+    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, uint2(sx1, sy));
+    float4 c2 = LOAD_TEXTURE2D_X(_InputTexture, uint2(sx2, sy));
     float4 c = float4(c1.r, c2.g, c1.b, c1.a);
 
     #else
 
-    float4 c = LOAD_TEXTURE2D_X(_PostSourceTexture, uv * _ScreenSize.xy);
+    float4 c = LOAD_TEXTURE2D_X(_InputTexture, uv * _ScreenSize.xy);
 
     #endif
 

@@ -1,10 +1,8 @@
-using UnityEngine.Rendering.Universal;
+using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Kino.PostProcessing
 {
-    using UnityEngine;
-    using UnityEngine.Rendering;
-    using static KinoCore;
     using SerializableAttribute = System.SerializableAttribute;
 
     #region Local enums and parameters
@@ -15,9 +13,6 @@ namespace Kino.PostProcessing
         Gradient,
         Texture
     }
-
-    [Serializable]
-    public sealed class SourceTypeParameter : VolumeParameter<SourceType> { }
 
     public enum BlendMode
     {
@@ -30,66 +25,87 @@ namespace Kino.PostProcessing
     }
 
     [Serializable]
-    public sealed class BlendModeParameter : VolumeParameter<BlendMode> { }
+    public class SourceTypeParameter : VolumeParameter<SourceType> { }
+
+    [Serializable]
+    public class BlendModeParameter : VolumeParameter<BlendMode> { }
 
     #endregion
 
-    [Serializable]
-    [VolumeComponentMenu("Post-processing/Kino/Overlay")]
+    [Serializable, VolumeComponentMenu("Post-processing/Kino/Overlay")]
     public sealed class Overlay : PostProcessVolumeComponent
     {
+        #region Common parameters
+
         public SourceTypeParameter sourceType = new() {value = SourceType.Gradient};
         public BlendModeParameter blendMode = new() {value   = BlendMode.Overlay};
         public ClampedFloatParameter opacity = new(0, 0, 1);
 
-        #region Color source parameter
+        #endregion
+
+        #region Single color mode parameter
 
         public ColorParameter color = new(Color.red, false, false, true);
 
         #endregion
 
-        #region Gradient source parameters
+        #region Gradient mode parameters
 
         public GradientParameter gradient = new();
         public ClampedFloatParameter angle = new(0, -180, 180);
 
         #endregion
 
-        #region Texture source parameters
+        #region Texture mode parameters
 
         public TextureParameter texture = new(null);
         public BoolParameter sourceAlpha = new(true);
 
         #endregion
 
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+        #region Private members
 
-        public override bool IsActive() => opacity.value > 0;
-        
+        private static class ShaderIDs
+        {
+            // Overlay
+            internal static readonly int OverlayColor = Shader.PropertyToID("_OverlayColor");
+            internal static readonly int GradientDirection = Shader.PropertyToID("_GradientDirection");
+            internal static readonly int OverlayOpacity = Shader.PropertyToID("_OverlayOpacity");
+            internal static readonly int OverlayTexture = Shader.PropertyToID("_OverlayTexture");
+
+            internal static readonly int UseTextureAlpha = Shader.PropertyToID("_UseTextureAlpha");
+        }
+
         GradientColorKey[] _gradientCache;
 
-        public override void Initialize(Material material)
+        #endregion
+
+        public override bool IsActive() => opacity.value > 0;
+
+        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+
+        public override void Setup(ScriptableObject scriptableObject)
         {
-            m_Material = material;
-            // m_Material ??= CoreUtils.CreateEngineMaterial(UserPostProcessData.shaders.OverlayPS);
+            var data = (KinoPostProcessData) scriptableObject;
+            material ??= CoreUtils.CreateEngineMaterial(data.shaders.OverlayPS);
 #if !UNITY_EDITOR
             // At runtime, copy gradient color keys only once on initialization.
             _gradientCache = gradient.value.colorKeys;
 #endif
         }
 
-        public override void Render(ref CommandBuffer cmd, ref CameraData cameraData, RenderTargetIdentifier source, RenderTargetIdentifier dest)
+        public override void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination)
         {
-            m_Material.SetFloat(ShaderIDs.OverlayOpacity, opacity.value);
+            material.SetFloat(ShaderIDs.OverlayOpacity, opacity.value);
 
             var pass = (int) blendMode.value * 3;
 
             if (sourceType == SourceType.Color)
             {
                 // Single color mode parameters
-                m_Material.SetColor(ShaderIDs.OverlayColor, color.value);
-                m_Material.SetTexture(ShaderIDs.OverlayTexture, Texture2D.whiteTexture);
-                m_Material.SetFloat(ShaderIDs.UseTextureAlpha, 0);
+                material.SetColor(ShaderIDs.OverlayColor, color.value.linear);
+                material.SetTexture(ShaderIDs.OverlayTexture, Texture2D.whiteTexture);
+                material.SetFloat(ShaderIDs.UseTextureAlpha, 0);
             }
             else if (sourceType == SourceType.Gradient)
             {
@@ -103,8 +119,8 @@ namespace Kino.PostProcessing
                 var dir = new Vector2(Mathf.Sin(rad), Mathf.Cos(rad));
 
                 // Gradient mode parameters
-                m_Material.SetVector(ShaderIDs.GradientDirection, dir);
-                GradientUtility.SetColorKeys(m_Material, _gradientCache);
+                material.SetVector(ShaderIDs.GradientDirection, dir);
+                GradientUtility.SetColorKeys(material, _gradientCache);
                 pass += _gradientCache.Length > 3 ? 2 : 1;
             }
             else // Overlay.Source.Texture
@@ -113,14 +129,14 @@ namespace Kino.PostProcessing
                 if (texture.value == null) return;
 
                 // Texture mode parameters
-                m_Material.SetColor(ShaderIDs.OverlayColor, Color.white);
-                m_Material.SetTexture(ShaderIDs.OverlayTexture, texture.value);
-                m_Material.SetFloat(ShaderIDs.UseTextureAlpha, sourceAlpha.value ? 1 : 0);
+                material.SetColor(ShaderIDs.OverlayColor, Color.white);
+                material.SetTexture(ShaderIDs.OverlayTexture, texture.value);
+                material.SetFloat(ShaderIDs.UseTextureAlpha, sourceAlpha.value ? 1 : 0);
             }
 
             // Blit to dest with the overlay shader.
-            cmd.SetPostProcessSourceTexture(source);
-            cmd.DrawFullScreenTriangle(m_Material, dest, pass);
+            cmd.SetPostProcessInputTexture(source);
+            cmd.DrawFullScreenTriangle(material, destination, pass);
         }
     }
 }

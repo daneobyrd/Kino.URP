@@ -14,19 +14,18 @@ namespace Kino.PostProcessing
 
     public static class GradientUtility
     {
-        static readonly GradientColorKey[] _defaultColorKeys = new []
+        static readonly GradientColorKey[] _defaultColorKeys = new[]
         {
             new GradientColorKey(Color.blue, 0),
             new GradientColorKey(Color.red, 1)
         };
 
-        static readonly GradientAlphaKey[] _defaultAlphaKeys = new []
+        static readonly GradientAlphaKey[] _defaultAlphaKeys = new[]
         {
-            new GradientAlphaKey(1, 0),
-            new GradientAlphaKey(1, 1)
+            new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 1)
         };
 
-        static readonly int[] _colorKeyPropertyIDs = new []
+        static readonly int[] _colorKeyPropertyIDs = new[]
         {
             Shader.PropertyToID("_ColorKey0"),
             Shader.PropertyToID("_ColorKey1"),
@@ -38,23 +37,23 @@ namespace Kino.PostProcessing
             Shader.PropertyToID("_ColorKey7")
         };
 
-        public static Gradient DefaultGradient {
-            get {
+        public static Gradient DefaultGradient
+        {
+            get
+            {
                 var g = new Gradient();
                 g.SetKeys(_defaultColorKeys, _defaultAlphaKeys);
                 return g;
             }
         }
 
-        public static int GetColorKeyPropertyID(int index)
-        {
-            return _colorKeyPropertyIDs[index];
-        }
+        public static int GetColorKeyPropertyID(int index) { return _colorKeyPropertyIDs[index]; }
 
         public static void SetColorKeys(Material material, GradientColorKey[] colorKeys)
         {
             for (var i = 0; i < 8; i++)
-                material.SetVector(
+                material.SetVector
+                (
                     GetColorKeyPropertyID(i),
                     colorKeys[Mathf.Min(i, colorKeys.Length - 1)].ToVector()
                 );

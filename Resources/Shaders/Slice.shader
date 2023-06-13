@@ -6,7 +6,7 @@ Shader "Hidden/Kino/PostProcess/Slice"
     #include "Includes/ClampUV.hlsl"
 
     CBUFFER_START(UnityPerMaterial)
-    TEXTURE2D_X(_PostSourceTexture);
+    TEXTURE2D_X(_InputTexture);
 
     float2 _SliceDirection;
     float _Displacement;
@@ -33,7 +33,7 @@ Shader "Hidden/Kino/PostProcess/Slice"
 
         uv = ClampAndScaleUVForBilinear(uv);
 
-        float4 finalColor = SAMPLE_TEXTURE2D_X(_PostSourceTexture, sampler_LinearClamp, uv);
+        float4 finalColor = SAMPLE_TEXTURE2D_X(_InputTexture, sampler_LinearClamp, uv);
         
         return finalColor;
     }

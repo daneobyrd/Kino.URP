@@ -5,14 +5,14 @@ Shader "Hidden/Kino/PostProcess/Sharpen"
     #include "Includes/KinoCommon.hlsl"
 
     CBUFFER_START(UnityPerMaterial)
-    TEXTURE2D_X(_PostSourceTexture);
+    TEXTURE2D_X(_InputTexture);
     float _SharpenIntensity;
     CBUFFER_END
     
     float4 SampleInput(int2 coord)
     {
         coord = min(max(0, coord), _ScreenSize.xy - 1);
-        return LOAD_TEXTURE2D_X(_PostSourceTexture, coord);
+        return LOAD_TEXTURE2D_X(_InputTexture, coord);
     }
 
     float4 Fragment(Varyings input) : SV_Target

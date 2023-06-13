@@ -1,20 +1,20 @@
-Shader "Hidden/Kino/PostProcess/Slice"
+Shader "Hidden/Kino/PostProcess/Streak"
 {
     HLSLINCLUDE
     #include "Includes/KinoCommon.hlsl"
 
-    CBUFFER_START(UnityPerMaterial)
-    TEXTURE2D_X(_CopyColorTexture);
-    TEXTURE2D(_PostSourceTexture);
+    // CBUFFER_START(UnityPerMaterial)
+    TEXTURE2D_X(_SourceTexture);
+    TEXTURE2D(_InputTexture);
     TEXTURE2D(_SourceTexLowMip);
 
-    float4 _PostSourceTexture_TexelSize;
+    float4 _InputTexture_TexelSize;
 
     float _Threshold;
     float _Stretch;
     float _StreakIntensity;
     float3 _StreakColor;
-    CBUFFER_END
+    // CBUFFER_END
 
     // Prefilter: Shrink horizontally and apply threshold.
     half4 FragmentPrefilter(Varyings input) : SV_Target
@@ -22,8 +22,8 @@ Shader "Hidden/Kino/PostProcess/Slice"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         uint2 ss = KinoUV * _ScreenSize.xy - float2(0, 0.5);
-        half3 c0 = LOAD_HDR_TEXTURE2D_X(_CopyColorTexture, ss).rgb;
-        half3 c1 = LOAD_HDR_TEXTURE2D_X(_CopyColorTexture, ss + uint2(0, 1)).rgb;
+        half3 c0 = LOAD_TEXTURE2D_X(_SourceTexture, ss).rgb;
+        half3 c1 = LOAD_TEXTURE2D_X(_SourceTexture, ss + uint2(0, 1)).rgb;
         half3 c = (c0 + c1) / 2;
 
         half br = max(c.r, max(c.g, c.b));
@@ -38,7 +38,7 @@ Shader "Hidden/Kino/PostProcess/Slice"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         float2 uv = KinoUV;
-        const float dx = _PostSourceTexture_TexelSize.x;
+        const float dx = _InputTexture_TexelSize.x;
 
         // 6-tap?
         float u0 = uv.x - dx * 5;
@@ -48,12 +48,12 @@ Shader "Hidden/Kino/PostProcess/Slice"
         float u4 = uv.x + dx * 3;
         float u5 = uv.x + dx * 5;
 
-        half3 c0 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
-        half3 c1 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
-        half3 c2 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
-        half3 c3 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u3, uv.y)).rgb;
-        half3 c4 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u4, uv.y)).rgb;
-        half3 c5 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u5, uv.y)).rgb;
+        half3 c0 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
+        half3 c1 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
+        half3 c2 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
+        half3 c3 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u3, uv.y)).rgb;
+        half3 c4 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u4, uv.y)).rgb;
+        half3 c5 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u5, uv.y)).rgb;
 
         half4 c = half4((c0 + c1 * 2 + c2 * 3 + c3 * 3 + c4 * 2 + c5) / 12, 1);
 
@@ -66,16 +66,16 @@ Shader "Hidden/Kino/PostProcess/Slice"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         float2 uv = KinoUV;
-        const float dx = _PostSourceTexture_TexelSize.x * 1.5;
+        const float dx = _InputTexture_TexelSize.x * 1.5;
 
         float u0 = uv.x - dx;
         float u1 = uv.x;
         float u2 = uv.x + dx;
 
-        half3 c0 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
-        half3 c1 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
-        half3 c2 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
-        half3 c3 = SAMPLE_HDR_TEXTURE2D(_SourceTexLowMip, sampler_LinearClamp, uv).rgb;
+        half3 c0 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
+        half3 c1 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
+        half3 c2 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
+        half3 c3 = SAMPLE_TEXTURE2D(_SourceTexLowMip, sampler_LinearClamp, uv).rgb;
 
         half4 c = float4(lerp(c3, (c0 / 4) + (c1 / 2) + (c2 / 4), _Stretch), 1);
 
@@ -89,16 +89,16 @@ Shader "Hidden/Kino/PostProcess/Slice"
 
         float2 uv = KinoUV;
         uint2 positionSS = uv * _ScreenSize.xy;
-        const float dx = _PostSourceTexture_TexelSize.x * 1.5;
+        const float dx = _InputTexture_TexelSize.x * 1.5;
 
         float u0 = uv.x - dx;
         float u1 = uv.x;
         float u2 = uv.x + dx;
 
-        half3 c0 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
-        half3 c1 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
-        half3 c2 = SAMPLE_HDR_TEXTURE2D(_PostSourceTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
-        half3 c3 = LOAD_HDR_TEXTURE2D_X(_CopyColorTexture, positionSS).rgb;
+        half3 c0 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u0, uv.y)).rgb;
+        half3 c1 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u1, uv.y)).rgb;
+        half3 c2 = SAMPLE_TEXTURE2D(_InputTexture, sampler_LinearClamp, float2(u2, uv.y)).rgb;
+        half3 c3 = LOAD_TEXTURE2D_X(_SourceTexture, positionSS).rgb;
         half3 cf = (c0 / 4 + c1 / 2 + c2 / 4) * _StreakColor * _StreakIntensity * 5;
 
         half4 c = half4(cf + c3, 1);

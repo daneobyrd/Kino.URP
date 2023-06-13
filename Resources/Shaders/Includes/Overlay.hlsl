@@ -1,18 +1,8 @@
 #include "KinoCommon.hlsl"
 
-CBUFFER_START(UnityPerMaterial)
-TEXTURE2D_X(_PostSourceTexture);
+TEXTURE2D_X(_InputTexture);
 float3 _OverlayColor;
 float _OverlayOpacity;
-
-//
-// Texture mode
-//
-
-TEXTURE2D(_OverlayTexture);
-SAMPLER(sampler_OverlayTexture);
-float _UseTextureAlpha;
-CBUFFER_END
 
 //
 // Blend function
@@ -60,23 +50,31 @@ float4 BlendFunction(float4 c1, float4 c2)
     return lerp(c1, c, c2.a);
 }
 
+//
+// Texture mode
+//
+
+TEXTURE2D(_OverlayTexture);
+SAMPLER(sampler_OverlayTexture);
+float _UseTextureAlpha;
+
 float4 FragmentTexture(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
     uint2 positionSS = KinoUV * _ScreenSize.xy;
-    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
     float4 c2 = SAMPLE_TEXTURE2D(_OverlayTexture, sampler_OverlayTexture, KinoUV);
 
-    c1.rgb = GetLinearToSRGB(c1.rgb);
-    c2.rgb = GetLinearToSRGB(c2.rgb);
+    c1.rgb = LinearToSRGB(c1.rgb);
+    c2.rgb = LinearToSRGB(c2.rgb);
 
     c2.rgb *= _OverlayColor;
     c2.a = _OverlayOpacity * lerp(1, c2.a, _UseTextureAlpha);
 
     float4 c = BlendFunction(c1, c2);
 
-    c.rgb = GetSRGBToLinear(c.rgb);
+    c.rgb = SRGBToLinear(c.rgb);
 
     return c;
 }
@@ -100,9 +98,9 @@ float4 FragmentGradient(Varyings input) : SV_Target
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
     uint2 positionSS = KinoUV * _ScreenSize.xy;
-    float4 c1 = LOAD_TEXTURE2D_X(_PostSourceTexture, positionSS);
+    float4 c1 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
 
-    c1.rgb = GetLinearToSRGB(c1.rgb);
+    c1.rgb = LinearToSRGB(c1.rgb);
 
     float p = dot(input.uv - 0.5f, _GradientDirection) + 0.5f;
     float3 c2 = _ColorKey0.rgb;
@@ -119,7 +117,7 @@ float4 FragmentGradient(Varyings input) : SV_Target
 
     float4 c = BlendFunction(c1, float4(c2, _OverlayOpacity));
 
-    c.rgb = GetSRGBToLinear(c.rgb);
+    c.rgb = SRGBToLinear(c.rgb);
     
     return c;
 }

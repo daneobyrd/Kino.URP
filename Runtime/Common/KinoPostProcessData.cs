@@ -34,7 +34,6 @@ namespace Kino.PostProcessing
         }
 #endif
 
-
         [Serializable, ReloadGroup]
         public sealed class ShaderResources
         {

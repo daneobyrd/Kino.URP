@@ -10,7 +10,7 @@ namespace Kino.PostProcessing
 {
     public static class KinoCore
     {
-        public static string packagePath = "Packages/jp.keijiro.kino.post-processing";
+        public static readonly string packagePath = "Packages/jp.keijiro.kino.post-processing";
 
         // Adapted from ScriptableRendererData
         /// <summary>
@@ -61,13 +61,14 @@ namespace Kino.PostProcessing
         /// </summary>
         public static void SetBlitterKeyword(CommandBuffer cmd)
         {
+            bool useSRPBlitter = false;
 #if UNITY_2022_1_OR_NEWER
             // UNITY_CORE_BLIT_INCLUDED and RTHandle support
-            CoreUtils.SetKeyword(cmd, "USE_BLITTER_API", true);
-#else
+            useSRPBlitter = true;
+            // #else
             // UNIVERSAL_FULLSCREEN_INCLUDED
-            CoreUtils.SetKeyword(cmd, "USE_BLITTER_API", false);
 #endif
+            CoreUtils.SetKeyword(cmd, "USE_BLITTER_API", useSRPBlitter);
         }
 
         public enum KinoProfileId
@@ -81,61 +82,6 @@ namespace Kino.PostProcessing
             Slice,
             TestCard
         }
-        
-        public static class ShaderIDs
-        {
-            internal static readonly int InputTexture = Shader.PropertyToID("_InputTexture");
-
-            internal static readonly int SourceColorTexture = Shader.PropertyToID("_CopyColorTexture");
-
-            // Streak
-            internal static readonly int StreakColor = Shader.PropertyToID("_StreakColor");
-            internal static readonly int SourceTexLowMip = Shader.PropertyToID("_SourceTexLowMip");
-            internal static readonly int StreakIntensity = Shader.PropertyToID("_StreakIntensity");
-            internal static readonly int Stretch = Shader.PropertyToID("_Stretch");
-
-            internal static readonly int Threshold = Shader.PropertyToID("_Threshold");
-
-            // Overlay
-            internal static readonly int OverlayColor = Shader.PropertyToID("_OverlayColor");
-            internal static readonly int GradientDirection = Shader.PropertyToID("_GradientDirection");
-            internal static readonly int OverlayOpacity = Shader.PropertyToID("_OverlayOpacity");
-            internal static readonly int OverlayTexture = Shader.PropertyToID("_OverlayTexture");
-
-            internal static readonly int UseTextureAlpha = Shader.PropertyToID("_UseTextureAlpha");
-
-            // Glitch
-            internal static readonly int GlitchSeed = Shader.PropertyToID("_GlitchSeed");
-            internal static readonly int BlockSeed1 = Shader.PropertyToID("_BlockSeed1");
-            internal static readonly int BlockSeed2 = Shader.PropertyToID("_BlockSeed2");
-            internal static readonly int BlockStrength = Shader.PropertyToID("_BlockStrength");
-            internal static readonly int BlockStride = Shader.PropertyToID("_BlockStride");
-            internal static readonly int Drift = Shader.PropertyToID("_Drift");
-            internal static readonly int Jitter = Shader.PropertyToID("_Jitter");
-            internal static readonly int Jump = Shader.PropertyToID("_Jump");
-            internal static readonly int Shake = Shader.PropertyToID("_Shake");
-
-            // Slice
-            internal static readonly int SliceDirection = Shader.PropertyToID("_SliceDirection");
-            internal static readonly int Displacement = Shader.PropertyToID("_Displacement");
-            internal static readonly int Rows = Shader.PropertyToID("_Rows");
-
-            internal static readonly int SliceSeed = Shader.PropertyToID("_SliceSeed");
-
-            // Sharpen
-            internal static readonly int SharpenIntensity = Shader.PropertyToID("_SharpenIntensity");
-
-            // Utility
-            internal static readonly int FadeColor = Shader.PropertyToID("_FadeColor");
-            internal static readonly int HueShift = Shader.PropertyToID("_HueShift");
-            internal static readonly int Invert = Shader.PropertyToID("_Invert");
-
-            internal static readonly int Saturation = Shader.PropertyToID("_Saturation");
-
-            // TestCard
-            internal static readonly int TestCardOpacity = Shader.PropertyToID("_TestCardOpacity");
-        }
-        
     }
 
     #region Accessing Internal Methods and QoL Extensions
@@ -230,7 +176,9 @@ namespace Kino.PostProcessing
 
         public static RenderTargetIdentifier GetCameraColorFrontBuffer(this ScriptableRenderer renderer, CommandBuffer cmd)
         {
-            return GetCameraColorBufferInternal(renderer, cmd, "GetFrontBuffer");
+            GetUniversalRendererMethodInternal(renderer, "GetCameraColorFrontBuffer", out var rendererMethod);
+            return (RenderTargetIdentifier) rendererMethod.Invoke(renderer, new object[] {cmd});
+            // return GetCameraColorBufferInternal(renderer, cmd, "GetFrontBuffer");
         }
     }
 
@@ -243,10 +191,10 @@ namespace Kino.PostProcessing
             commandBuffer.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material, 0, shaderPassId);
         }
 
-        public static void FinalBlit(this CustomPostProcessPass pass,
+        public static void FinalBlit(this PostProcessRenderPass pass,
                                      CommandBuffer cmd, RenderTargetIdentifier source, ref RenderingData renderingData, Material _material, int passIndex = 0)
         {
-            cmd.SetPostProcessSourceTexture(source);
+            cmd.SetPostProcessInputTexture(source);
             pass.ConfigureTarget(source);
             pass.ConfigureClear(ClearFlag.All, Color.white);
             pass.Blit(cmd, ref renderingData, _material, passIndex);

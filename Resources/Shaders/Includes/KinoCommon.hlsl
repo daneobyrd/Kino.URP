@@ -33,10 +33,10 @@ half3 DecodeHDR(half4 color)
     #endif
 }
 
-#define LOAD_HDR_TEXTURE2D(texture, uv)     DecodeHDR(LOAD_TEXTURE2D(texture, uv))
+/*#define LOAD_HDR_TEXTURE2D(texture, uv)     DecodeHDR(LOAD_TEXTURE2D(texture, uv))
 #define LOAD_HDR_TEXTURE2D_X(texture, uv)   DecodeHDR(LOAD_TEXTURE2D_X(texture, uv))
 #define SAMPLE_HDR_TEXTURE2D(texture, sampler, uv)   DecodeHDR(SAMPLE_TEXTURE2D(texture, sampler, uv))
-#define SAMPLE_HDR_TEXTURE2D_X(texture, sampler, uv) DecodeHDR(SAMPLE_TEXTURE2D_X(texture, sampler, uv))
+#define SAMPLE_HDR_TEXTURE2D_X(texture, sampler, uv) DecodeHDR(SAMPLE_TEXTURE2D_X(texture, sampler, uv))*/
 
 // Set in KinoCore.cs
 #if USE_BLITTER_API // URP 13.1 (UNITY 2022.1)
