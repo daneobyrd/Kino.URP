@@ -1,10 +1,12 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+
+namespace Kino.PostProcessing
 {
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Slice))]
-    sealed class SliceEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Slice))]
+    sealed class SliceEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_RowCount;
         SerializedDataParameter m_Angle;

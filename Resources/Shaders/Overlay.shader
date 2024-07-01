@@ -2,10 +2,10 @@
 {
     SubShader
     {
-        HLSLINCLUDE
-        #include "Includes/Overlay.hlsl"
-        // #pragma multi_compile_local _ _LINEAR_TO_SRGB_CONVERSION
-        ENDHLSL
+        Tags
+        {
+            "RenderType" = "Opaque"
+        }
         Cull Off ZWrite Off ZTest Always
 
         // Normal mode (alpha blending)
@@ -17,6 +17,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_NORMAL
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -27,6 +28,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_NORMAL
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -38,6 +40,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_NORMAL
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -50,6 +53,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_SCREEN
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -60,6 +64,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_SCREEN
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -71,6 +76,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_SCREEN
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -83,6 +89,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_OVERLAY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -93,6 +100,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_OVERLAY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -104,6 +112,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_OVERLAY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -116,6 +125,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_MULTIPLY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -126,6 +136,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_MULTIPLY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -137,6 +148,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_MULTIPLY
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -149,6 +161,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_SOFTLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -159,6 +172,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_SOFTLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -170,6 +184,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_SOFTLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -182,6 +197,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentTexture
             #define OVERLAY_BLEND_HARDLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -192,6 +208,7 @@
             #pragma vertex Vert
             #pragma fragment FragmentGradient
             #define OVERLAY_BLEND_HARDLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
 
@@ -203,6 +220,7 @@
             #pragma fragment FragmentGradient
             #define OVERLAY_GRADIENT_EXT
             #define OVERLAY_BLEND_HARDLIGHT
+            #include "Includes/Overlay.hlsl"
             ENDHLSL
         }
     }

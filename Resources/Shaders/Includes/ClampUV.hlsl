@@ -88,7 +88,7 @@
  * https://github.com/Unity-Technologies/Graphics/commit/98bd020f9c427721d7f20b260ca61f00b0789e98
  *
  * Previous comments on my Unity Forum post about Blitting discuss how the SRP Blitter class is not "available"
- * prior on versions prior to Unity 2022.1 because of the lack of RTHandles support.
+ * on versions prior to Unity 2022.1 because of the lack of RTHandles support.
  * 
  * https://forum.unity.com/threads/how-to-blit-in-urp-documentation-unity-blog-post-on-every-blit-function.1211508/#post-7735527
  * https://forum.unity.com/threads/how-to-blit-in-urp-documentation-unity-blog-post-on-every-blit-function.1211508/#post-7740675

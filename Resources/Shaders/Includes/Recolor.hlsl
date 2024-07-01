@@ -2,7 +2,6 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
 
-CBUFFER_START(UnityPerMaterial)
 TEXTURE2D_X(_InputTexture);
 
 float4 _EdgeColor;
@@ -20,13 +19,12 @@ float4 _ColorKey7;
 
 TEXTURE2D(_DitherTexture);
 float _DitherStrength;
-CBUFFER_END
 
 float4 Fragment(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-    uint2 positionSS = KinoUV * _ScreenSize.xy;
+    uint2 positionSS = input.texcoord * _ScreenSize.xy;
 
     // Source color
     float4 c0 = LOAD_TEXTURE2D_X(_InputTexture, positionSS);

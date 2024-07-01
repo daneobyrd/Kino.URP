@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using CustomPostProcessing.UniversalRP;
 
 namespace Kino.PostProcessing
 {
     using SerializableAttribute = System.SerializableAttribute;
 
     [Serializable, VolumeComponentMenu("Post-processing/Kino/Recolor")]
-    public sealed class Recolor : PostProcessVolumeComponent
+    public sealed class Recolor : CustomPostProcessVolumeComponent
     {
         #region Local enum parameters
 
@@ -33,6 +35,8 @@ namespace Kino.PostProcessing
 
         #endregion
 
+        #region Volume Parameters
+
         public ColorParameter edgeColor = new(new Color(0, 0, 0, 0), false, true, true);
         public EdgeSourceParameter edgeSource = new() {value = EdgeSource.Depth};
         public ClampedFloatParameter edgeThreshold = new(0.5f, 0, 1);
@@ -42,9 +46,7 @@ namespace Kino.PostProcessing
         public DitherTypeParameter ditherType = new() {value = DitherType.Bayer4x4};
         public ClampedFloatParameter ditherStrength = new(0, 0, 1);
 
-        public override bool IsActive() => (edgeColor.value.a > 0 || fillOpacity.value > 0);
-
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+        #endregion
 
         #region Private members
 
@@ -66,13 +68,17 @@ namespace Kino.PostProcessing
 
         #endregion
 
-        public override void Setup(ScriptableObject scriptableObject)
+        public override bool IsActive() => (edgeColor.value.a > 0 || fillOpacity.value > 0);
+
+        public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
+
+        protected override void Setup(ScriptableObject scriptableObject)
         {
             var data = (KinoPostProcessData) scriptableObject;
-            material ??= CoreUtils.CreateEngineMaterial(data.shaders.RecolorPS);
+            Initialize(data.shaders.RecolorPS);
         }
 
-        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        public override void Render(CommandBuffer cmd, CameraData unused, RTHandle srcRT, RTHandle destRT)
         {
             if (_ditherType != ditherType.value || _ditherTexture == null)
             {
@@ -123,14 +129,13 @@ namespace Kino.PostProcessing
             if (fillGradient.value.mode == GradientMode.Blend) pass        += 6;
 
             // Blit to destRT with the overlay shader.
-            cmd.SetGlobalTexture(ShaderIDs.SourceTexture, srcRT);
-            cmd.DrawFullScreenTriangle(material, destRT, pass);
+            cmd.SetPostProcessInputTexture(srcRT);
+            material.DrawFullScreen(cmd, srcRT, destRT, pass);
         }
 
         public override void Cleanup()
         {
             CoreUtils.Destroy(_ditherTexture);
-            base.Cleanup();
         }
 
         #region Dither texture generator

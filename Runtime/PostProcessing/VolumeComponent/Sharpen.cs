@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using CustomPostProcessing.UniversalRP;
 
 namespace Kino.PostProcessing
 {
     using SerializableAttribute = System.SerializableAttribute;
 
     [Serializable, VolumeComponentMenu("Post-processing/Kino/Sharpen")]
-    public sealed class Sharpen : PostProcessVolumeComponent
+    public sealed class Sharpen : CustomPostProcessVolumeComponent
     {
         public ClampedFloatParameter intensity = new(0, 0, 1);
 
@@ -17,21 +19,29 @@ namespace Kino.PostProcessing
 
         public override bool IsActive() => intensity.value > 0;
 
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+        public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
 
-        public override void Setup(ScriptableObject scriptableObject)
+        protected override void Setup(ScriptableObject scriptableObject)
         {
             var data = (KinoPostProcessData) scriptableObject;
-            material ??= CoreUtils.CreateEngineMaterial(data.shaders.SharpenPS);
+            Initialize(data.shaders.SharpenPS);
         }
 
-        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        public override void Render(CommandBuffer cmd, CameraData unused, RTHandle srcRT, RTHandle destRT)
         {
-            // if (m_Material == null) return;
+            if (material == null) return;
 
             material.SetFloat(ShaderIDs.SharpenIntensity, intensity.value);
             cmd.SetPostProcessInputTexture(srcRT);
-            cmd.DrawFullScreenTriangle(material, destRT);
+            material.DrawFullScreen(cmd, srcRT, destRT);
+        }
+
+        public override void Cleanup()
+        {
+            // if (material)
+            // {
+            //     CoreUtils.Destroy(material);
+            // }
         }
     }
 }

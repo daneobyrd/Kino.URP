@@ -8,9 +8,12 @@ using UnityEngine.Rendering;
 
 namespace Kino.PostProcessing
 {
+    using static KinoCore;
     [Serializable]
     public class KinoPostProcessData : ScriptableObject
     {
+        private static string defaultFileName = "KinoPostProcessData.asset";
+        
 #if UNITY_EDITOR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
         internal class CreatePostProcessDataAsset : EndNameEditAction
@@ -19,17 +22,20 @@ namespace Kino.PostProcessing
             {
                 var instance = CreateInstance<KinoPostProcessData>();
                 AssetDatabase.CreateAsset(instance, pathName);
-                ResourceReloader.ReloadAllNullIn(instance, "Packages/jp.keijiro.kino.post-processing");
+                ResourceReloader.ReloadAllNullIn(instance, packagePath);
                 Selection.activeObject = instance;
             }
         }
 
-        [MenuItem("Assets/Create/Rendering/Custom Post Processing/UserPostProcessData", priority = CoreUtils.Sections.section5 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority)]
-        static void CreatePostProcessData() { ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, CreateInstance<CreatePostProcessDataAsset>(), "UserPostProcessData.asset", null, null); }
-
-        public static KinoPostProcessData GetDefaultUserPostProcessData()
+        [MenuItem("Assets/Create/Rendering/Custom Post Processing/KinoPostProcessData", priority = CoreUtils.Sections.section5 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority)]
+        static void CreatePostProcessData()
         {
-            var path = System.IO.Path.Combine("Packages/jp.keijiro.kino.post-processing", "Runtime/Data/KinoPostProcessData.asset");
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, CreateInstance<CreatePostProcessDataAsset>(), defaultFileName, null, null);
+        }
+
+        public static KinoPostProcessData GetDefaultCustomPostProcessData()
+        {
+            var path = System.IO.Path.Combine(packagePath, $"Runtime/Data/{defaultFileName}/");
             return AssetDatabase.LoadAssetAtPath<KinoPostProcessData>(path);
         }
 #endif
@@ -46,7 +52,7 @@ namespace Kino.PostProcessing
             [Reload("Resources/Overrides/Recolor.shader", ReloadAttribute.Package.Root)]
             public Shader RecolorPS;
 
-            [Reload("Resources/Overrides/Sharpen.shader", ReloadAttribute.Package.Root)]
+            [Reload("Resources/Overrides/Glitch.shader", ReloadAttribute.Package.Root)]
             public Shader GlitchPS;
 
             [Reload("Resources/Overrides/Sharpen.shader", ReloadAttribute.Package.Root)]
@@ -60,9 +66,6 @@ namespace Kino.PostProcessing
 
             [Reload("Resources/Overrides/TestCard.shader", ReloadAttribute.Package.Root)]
             public Shader TestCardPS;
-
-            // [Reload("Resources/FinalPost.shader")]
-            // public Shader finalPostPassPS;
         }
 
         public ShaderResources shaders;

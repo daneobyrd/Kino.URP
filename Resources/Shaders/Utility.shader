@@ -16,7 +16,7 @@ Shader "Hidden/Kino/PostProcess/Utility"
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-        uint2 positionSS = KinoUV * _ScreenSize.xy;
+        uint2 positionSS = input.texcoord * _ScreenSize.xy;
         float4 c = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
         float3 rgb = c.rgb;
 

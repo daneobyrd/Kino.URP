@@ -1,5 +1,8 @@
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using CustomPostProcessing.UniversalRP;
 
 namespace Kino.PostProcessing
 {
@@ -33,7 +36,7 @@ namespace Kino.PostProcessing
     #endregion
 
     [Serializable, VolumeComponentMenu("Post-processing/Kino/Overlay")]
-    public sealed class Overlay : PostProcessVolumeComponent
+    public sealed class Overlay : CustomPostProcessVolumeComponent
     {
         #region Common parameters
 
@@ -80,22 +83,26 @@ namespace Kino.PostProcessing
 
         #endregion
 
-        public override bool IsActive() => opacity.value > 0;
+        public override bool IsActive() => material != null && opacity.value > 0;
 
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+        public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
 
-        public override void Setup(ScriptableObject scriptableObject)
+        protected override void Setup(ScriptableObject scriptableObject)
         {
+            Assert.IsNotNull(scriptableObject);
             var data = (KinoPostProcessData) scriptableObject;
-            material ??= CoreUtils.CreateEngineMaterial(data.shaders.OverlayPS);
+            Initialize(data.shaders.OverlayPS);
 #if !UNITY_EDITOR
             // At runtime, copy gradient color keys only once on initialization.
             _gradientCache = gradient.value.colorKeys;
 #endif
         }
-
-        public override void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination)
+        
+        public override void Render(CommandBuffer cmd, CameraData unused, RTHandle source, RTHandle destination)
         {
+            if (material == null)
+                return;
+            
             material.SetFloat(ShaderIDs.OverlayOpacity, opacity.value);
 
             var pass = (int) blendMode.value * 3;
@@ -136,7 +143,7 @@ namespace Kino.PostProcessing
 
             // Blit to dest with the overlay shader.
             cmd.SetPostProcessInputTexture(source);
-            cmd.DrawFullScreenTriangle(material, destination, pass);
+            material.DrawFullScreen(cmd, source, destination, pass);
         }
     }
 }

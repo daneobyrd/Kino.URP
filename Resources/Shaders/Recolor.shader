@@ -7,6 +7,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         // 4 keys, fixed gradient
         Pass
         {
+            Name "Recolor Edge Color: 4 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -16,6 +17,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Depth: 4 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -25,6 +27,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Normal: 4 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -36,6 +39,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         // 8 keys, fixed gradient
         Pass
         {
+            Name "Recolor Edge Color: 8 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -46,6 +50,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Depth: 8 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -56,6 +61,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Normal: 8 Keys Fixed Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -68,6 +74,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         // 4 keys, blend gradient
         Pass
         {
+            Name "Recolor Edge Color: 4 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -78,6 +85,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Depth: 4 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -88,6 +96,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Normal: 4 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -100,6 +109,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         // 8 keys, blend gradient
         Pass
         {
+            Name "Recolor Edge Color: 8 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -111,6 +121,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Depth: 8 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment
@@ -122,6 +133,7 @@ Shader "Hidden/Kino/PostProcess/Recolor"
         }
         Pass
         {
+            Name "Recolor Edge Normal: 8 Keys Blend Gradient"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Fragment

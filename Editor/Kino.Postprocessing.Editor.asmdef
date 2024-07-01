@@ -1,9 +1,12 @@
 {
     "name": "Kino.Postprocessing.Editor",
+    "rootNamespace": "",
     "references": [
-        "Kino.Postprocessing",
-        "Unity.RenderPipelines.Core.Runtime",
-        "Unity.RenderPipelines.Core.Editor"
+        "GUID:bcd9947e845b99f45be0849b7d1a4a4e",
+        "GUID:90bf50708992f714290241d2e72ee036",
+        "GUID:2efe69e384d582f40afe96bc8c43b437",
+        "GUID:df380645f10b7bc4b97d4f5eb6303d95",
+        "GUID:3eae0364be2026648bf74846acb8a731"
     ],
     "includePlatforms": [
         "Editor"

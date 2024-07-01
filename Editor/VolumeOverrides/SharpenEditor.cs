@@ -1,10 +1,12 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+
+namespace Kino.PostProcessing
 {
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Sharpen))]
-    sealed class SharpenEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Sharpen))]
+    sealed class SharpenEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_Intensity;
 

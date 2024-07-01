@@ -1,11 +1,13 @@
+using CustomPostProcessing.UniversalRP.Editor;
+
 namespace Kino.PostProcessing.Editor
 {
     using UnityEngine;
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Recolor))]
-    public sealed class RecolorEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Recolor))]
+    public sealed class RecolorEditor : CustomPostProcessVolumeComponentEditor
     {
         static class Labels
         {

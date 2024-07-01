@@ -1,10 +1,12 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+
+namespace Kino.PostProcessing
 {
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Streak))]
-    sealed class StreakEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Streak))]
+    sealed class StreakEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_Threshold;
         SerializedDataParameter m_Stretch;

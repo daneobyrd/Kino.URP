@@ -55,12 +55,12 @@ Shader "Hidden/Kino/PostProcess/TestCard"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
         // Source image
-        uint2 positionSS = KinoUV * _ScreenSize.xy;
+        uint2 positionSS = input.texcoord * _ScreenSize.xy;
         float4 c = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
 
         // Blend the test pattern in sRGB.
         c.rgb = LinearToSRGB(c.rgb);
-        c.rgb = lerp(c.rgb, TestPattern(KinoUV), _TestCardOpacity);
+        c.rgb = lerp(c.rgb, TestPattern(input.texcoord), _TestCardOpacity);
         c.rgb = SRGBToLinear(c.rgb);
 
         return c;

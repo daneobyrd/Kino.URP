@@ -1,8 +1,10 @@
 {
     "name": "Kino.Postprocessing",
+    "rootNamespace": "",
     "references": [
-        "Unity.RenderPipelines.Core.Runtime",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "GUID:90bf50708992f714290241d2e72ee036",
+        "GUID:df380645f10b7bc4b97d4f5eb6303d95",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

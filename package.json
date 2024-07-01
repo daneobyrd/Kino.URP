@@ -1,6 +1,10 @@
 {
     "author": "Keijiro Takahashi",
-    "dependencies": { "com.unity.render-pipelines.universal": "7.4.1" },
+    "dependencies": 
+    {
+        "com.unity.render-pipelines.universal": "7.4.1",
+        "db.urp.custom-post-processing": "file: ../URP Custom Post Processing"
+    },
     "description": "Custom post processing effect collection for URP",
     "displayName": "Kino",
     "keywords": [ "unity" ],

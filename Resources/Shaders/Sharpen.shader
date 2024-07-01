@@ -4,10 +4,8 @@ Shader "Hidden/Kino/PostProcess/Sharpen"
 
     #include "Includes/KinoCommon.hlsl"
 
-    CBUFFER_START(UnityPerMaterial)
     TEXTURE2D_X(_InputTexture);
     float _SharpenIntensity;
-    CBUFFER_END
     
     float4 SampleInput(int2 coord)
     {
@@ -19,7 +17,7 @@ Shader "Hidden/Kino/PostProcess/Sharpen"
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-        int2 positionSS = KinoUV * _ScreenSize.xy;
+        int2 positionSS = input.texcoord * _ScreenSize.xy;
 
         float4 c0 = SampleInput(positionSS + int2(-1, -1));
         float4 c1 = SampleInput(positionSS + int2( 0, -1));

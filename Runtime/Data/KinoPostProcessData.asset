@@ -16,7 +16,7 @@ MonoBehaviour:
     StreakPS: {fileID: 4800000, guid: 017f76d86faea2647bf83a4e1a9d1d47, type: 3}
     OverlayPS: {fileID: 4800000, guid: 4a7a87040beef8649bdf0cd27e3c240f, type: 3}
     RecolorPS: {fileID: 4800000, guid: e4a15c7cdc14bd44e9efdb7571af640f, type: 3}
-    GlitchPS: {fileID: 4800000, guid: 7529f969cd6084449a09bb92747af7b7, type: 3}
+    GlitchPS: {fileID: 4800000, guid: 689e2be0fadb9864cbd81304d34caecb, type: 3}
     SharpenPS: {fileID: 4800000, guid: 7529f969cd6084449a09bb92747af7b7, type: 3}
     UtilityPS: {fileID: 4800000, guid: d5e2f3a35a58ce845bbfa01197dbbcdf, type: 3}
     SlicePS: {fileID: 4800000, guid: f2fcc3dd61de0564ab928639f28316de, type: 3}

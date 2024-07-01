@@ -1,20 +1,23 @@
 ﻿using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using CustomPostProcessing.UniversalRP;
 using SerializableAttribute = System.SerializableAttribute;
 
 namespace Kino.PostProcessing
 {
     [Serializable, VolumeComponentMenu("Post-processing/Kino/Glitch")]
-    public sealed class Glitch : PostProcessVolumeComponent
+    public sealed class Glitch : CustomPostProcessVolumeComponent
     {
         public ClampedFloatParameter block = new(0, 0, 1);
         public ClampedFloatParameter drift = new(0, 0, 1);
         public ClampedFloatParameter jitter = new(0, 0, 1);
         public ClampedFloatParameter jump = new(0, 0, 1);
         public ClampedFloatParameter shake = new(0, 0, 1);
-        
+
         #region Private members
-        
+
         float _prevTime;
         float _jumpTime;
 
@@ -35,30 +38,26 @@ namespace Kino.PostProcessing
             internal static readonly int Jump = Shader.PropertyToID("_Jump");
             internal static readonly int Shake = Shader.PropertyToID("_Shake");
         }
-        
+
         #endregion
         
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
+        public override bool IsActive() => material != null &&
+            (block.value > 0 ||
+             drift.value > 0 ||
+             jitter.value > 0 ||
+             jump.value > 0 ||
+             shake.value > 0);
 
-        public override bool IsActive()
+        public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
+
+        protected override void Setup(ScriptableObject resourceData)
         {
-            return block.value > 0 ||
-                   drift.value > 0 ||
-                   jitter.value > 0 ||
-                   jump.value > 0 ||
-                   shake.value > 0;
+            var data = (KinoPostProcessData) resourceData;
+            Initialize(data.shaders.GlitchPS);
         }
 
-        public override void Setup(ScriptableObject scriptableObject)
+        public override void Render(CommandBuffer cmd, CameraData unused, RTHandle source, RTHandle destination)
         {
-            var data = (KinoPostProcessData) scriptableObject;
-            material ??= CoreUtils.CreateEngineMaterial(data.shaders.GlitchPS);
-        }
-
-        public override void Render(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination)
-        {
-            // if (m_Material == null) return;
-
             // Update the time parameters.
             var time = Time.time;
             var delta = time - _prevTime;
@@ -114,7 +113,7 @@ namespace Kino.PostProcessing
             if (block.value > 0) pass                                                          += 2;
 
             // Blit
-            cmd.DrawFullScreenTriangle(material, destination, pass);
+            material.DrawFullScreen(cmd, source, destination, pass);
         }
     }
 }

@@ -1,10 +1,12 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+
+namespace Kino.PostProcessing
 {
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Utility))]
-    sealed class UtilityEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Utility))]
+    sealed class UtilityEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_Saturation;
         SerializedDataParameter m_HueShift;

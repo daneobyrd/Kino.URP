@@ -1,20 +1,19 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using CustomPostProcessing.UniversalRP;
 
 namespace Kino.PostProcessing
 {
     using SerializableAttribute = System.SerializableAttribute;
 
     [Serializable, VolumeComponentMenu("Post-processing/Kino/Streak")]
-    public sealed class Utility : PostProcessVolumeComponent
+    public sealed class Utility : CustomPostProcessVolumeComponent
     {
-
         public ClampedFloatParameter saturation = new(1, 0, 2);
         public ClampedFloatParameter hueShift = new(0, -1, 1);
         public ClampedFloatParameter invert = new(0, 0, 1);
         public ColorParameter fade = new(new Color(0, 0, 0, 0), false, true, true);
-
-        public override InjectionPoint InjectionPoint => InjectionPoint.AfterPostProcess;
 
         private static class ShaderIDs
         {
@@ -26,18 +25,22 @@ namespace Kino.PostProcessing
         }
 
         public override bool IsActive() =>
+        (
             !Mathf.Approximately(saturation.value, 1)
             || !Mathf.Approximately(hueShift.value, 0)
             || invert.value > 0
-            || fade.value.a > 0;
+            || fade.value.a > 0
+        );
 
-        public override void Setup(ScriptableObject scriptableObject)
+        public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.AfterPostProcess;
+
+        protected override void Setup(ScriptableObject scriptableObject)
         {
             var data = (KinoPostProcessData) scriptableObject;
-            material = CoreUtils.CreateEngineMaterial(data.shaders.UtilityPS);
+            Initialize(data.shaders.UtilityPS);
         }
 
-        public override void Render(CommandBuffer cmd, RenderTargetIdentifier srcRT, RenderTargetIdentifier destRT)
+        public override void Render(CommandBuffer cmd, CameraData unused, RTHandle srcRT, RTHandle destRT)
         {
             if (material == null) return;
 
@@ -47,7 +50,7 @@ namespace Kino.PostProcessing
             material.SetFloat(ShaderIDs.Saturation, saturation.value);
 
             cmd.SetPostProcessInputTexture(srcRT);
-            cmd.DrawFullScreenTriangle(material, destRT);
+            material.DrawFullScreen(cmd, srcRT, destRT);
         }
     }
 }

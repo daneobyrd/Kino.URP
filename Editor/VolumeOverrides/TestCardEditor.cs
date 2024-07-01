@@ -1,10 +1,12 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+
+namespace Kino.PostProcessing
 {
     using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(TestCard))]
-    sealed class TestCardEditor : VolumeComponentEditor
+    [CustomEditor(typeof(TestCard))]
+    sealed class TestCardEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_Opacity;
 

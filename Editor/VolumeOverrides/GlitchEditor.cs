@@ -1,10 +1,13 @@
-﻿namespace Kino.PostProcessing
+﻿using CustomPostProcessing.UniversalRP.Editor;
+using UnityEditor;
+using UnityEngine.Rendering;
+
+namespace Kino.PostProcessing
 {
-    using UnityEditor;
     using UnityEditor.Rendering;
 
-    [VolumeComponentEditor(typeof(Glitch))]
-    sealed class GlitchEditor : VolumeComponentEditor
+    [CustomEditor(typeof(Glitch))]
+    sealed class GlitchEditor : CustomPostProcessVolumeComponentEditor
     {
         SerializedDataParameter m_Block;
         SerializedDataParameter m_Drift;
@@ -15,16 +18,17 @@
         public override void OnEnable()
         {
             var o = new PropertyFetcher<Glitch>(serializedObject);
-            
-            m_Block          = Unpack(o.Find(x => x.block));
-            m_Drift          = Unpack(o.Find(x => x.drift));
-            m_Jitter         = Unpack(o.Find(x => x.jitter));
-            m_Jump           = Unpack(o.Find(x => x.jump));
-            m_Shake          = Unpack(o.Find(x => x.shake));
+
+            m_Block    = Unpack(o.Find(x => x.block));
+            m_Drift    = Unpack(o.Find(x => x.drift));
+            m_Jitter   = Unpack(o.Find(x => x.jitter));
+            m_Jump     = Unpack(o.Find(x => x.jump));
+            m_Shake    = Unpack(o.Find(x => x.shake));
         }
 
         public override void OnInspectorGUI()
         {
+
             PropertyField(m_Block);
             PropertyField(m_Drift);
             PropertyField(m_Jitter);
